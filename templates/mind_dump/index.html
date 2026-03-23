@@ -26,7 +26,7 @@
             aria_label="Quick capture"
         ) }}
         <button type="submit" class="btn btn-warning fw-bold px-4">
-          <i class="bi bi-lightning-fill"></i> Capture
+          <i class="bi bi-lightning-fill"></i><span class="d-none d-sm-inline"> Capture</span>
         </button>
       </div>
     </form>
@@ -93,22 +93,22 @@
         <div class="d-flex flex-wrap gap-1 flex-shrink-0">
           <a href="{{ url_for('mind_dump.promote_task', entry_id=entry.id) }}"
              class="btn btn-sm btn-outline-primary" title="Promote to Task">
-            <i class="bi bi-check2-square"></i> Task
+            <i class="bi bi-check2-square"></i><span class="d-none d-sm-inline"> Task</span>
           </a>
           <a href="{{ url_for('mind_dump.promote_project', entry_id=entry.id) }}"
              class="btn btn-sm btn-outline-success" title="Promote to Project">
-            <i class="bi bi-kanban"></i> Project
+            <i class="bi bi-kanban"></i><span class="d-none d-sm-inline"> Project</span>
           </a>
           <a href="{{ url_for('mind_dump.promote_big_idea', entry_id=entry.id) }}"
              class="btn btn-sm btn-outline-secondary" title="Promote to Big Idea">
-            <i class="bi bi-stars"></i> Idea
+            <i class="bi bi-stars"></i><span class="d-none d-sm-inline"> Idea</span>
           </a>
           {% if entry.status != 'Someday' %}
           <form method="POST" action="{{ url_for('mind_dump.mark_someday', entry_id=entry.id) }}"
                 class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-sm btn-outline-secondary" title="Someday/Maybe">
-              <i class="bi bi-moon"></i> Someday
+              <i class="bi bi-moon"></i><span class="d-none d-sm-inline"> Someday</span>
             </button>
           </form>
           {% endif %}

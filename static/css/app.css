@@ -157,4 +157,28 @@ body {
   .focus-card {
     padding: 1.5rem;
   }
+
+  /* Scale body text slightly smaller */
+  body {
+    font-size: 0.9rem;
+  }
+
+  /* Prevent the large input-group from overflowing */
+  .input-group.input-group-lg .form-control,
+  .input-group.input-group-lg .btn {
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Tighten list-group item padding */
+  .list-group-item {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  /* Scale down page heading + action button rows */
+  .d-flex.justify-content-between h1,
+  .d-flex.justify-content-between h2 {
+    font-size: 1.1rem;
+  }
 }

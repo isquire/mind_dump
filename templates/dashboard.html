@@ -18,7 +18,7 @@
             aria_label="Quick capture"
         ) }}
         <button type="submit" class="btn btn-warning fw-bold px-4">
-          <i class="bi bi-lightning-fill"></i> Capture
+          <i class="bi bi-lightning-fill"></i><span class="d-none d-sm-inline"> Capture</span>
         </button>
       </div>
     </form>
@@ -73,12 +73,12 @@
       <div class="d-flex gap-2 flex-wrap justify-content-end">
         <a href="{{ url_for('focus.view', task_id=one_thing.id) }}"
            class="btn btn-warning btn-sm fw-semibold">
-          <i class="bi bi-fullscreen"></i> Focus
+          <i class="bi bi-fullscreen"></i><span class="d-none d-sm-inline"> Focus</span>
         </a>
         <form method="POST" action="{{ url_for('tasks.unpin', task_id=one_thing.id) }}" class="d-inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-pin-angle"></i> Unpin
+            <i class="bi bi-pin-angle"></i><span class="d-none d-sm-inline"> Unpin</span>
           </button>
         </form>
       </div>
@@ -115,7 +115,7 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-sm btn-outline-warning"
                   title="Move to tomorrow">
-            <i class="bi bi-arrow-right-circle"></i> Tomorrow
+            <i class="bi bi-arrow-right-circle"></i><span class="d-none d-sm-inline"> Tomorrow</span>
           </button>
         </form>
         <a href="{{ url_for('focus.view', task_id=task.id) }}"
