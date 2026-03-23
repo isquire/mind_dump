@@ -56,10 +56,12 @@ def db(app):
 
 @pytest.fixture()
 def user(db):
-    u = User(username='testuser')
-    u.set_password('testpassword123')
-    db.session.add(u)
-    db.session.commit()
+    u = User.query.filter_by(username='testuser').first()
+    if u is None:
+        u = User(username='testuser')
+        u.set_password('testpassword123')
+        db.session.add(u)
+        db.session.commit()
     return u
 
 
