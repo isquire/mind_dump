@@ -37,7 +37,9 @@
 
           {# Project #}
           <div class="mb-3">
-            <label for="project_id" class="form-label fw-semibold">Project <span class="text-danger">*</span></label>
+            <label for="project_id" class="form-label fw-semibold">
+              Project <span class="text-muted fw-normal">(optional)</span>
+            </label>
             {{ form.project_id(class="form-select" + (" is-invalid" if form.project_id.errors else ""),
                               id="project_id") }}
             {% for error in form.project_id.errors %}
@@ -91,9 +93,11 @@
             <button type="submit" class="btn btn-primary">
               <i class="bi bi-check-lg"></i> {{ 'Save Changes' if task else 'Create Task' }}
             </button>
-            {% if task %}
+            {% if task and task.project_id %}
               <a href="{{ url_for('projects.detail', project_id=task.project_id) }}"
                  class="btn btn-outline-secondary">Cancel</a>
+            {% elif task %}
+              <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">Cancel</a>
             {% else %}
               <a href="{{ url_for('projects.index') }}" class="btn btn-outline-secondary">Cancel</a>
             {% endif %}

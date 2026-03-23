@@ -102,7 +102,7 @@ class Task(db.Model):
     STATUS_CHOICES = ['Not Started', 'In Progress', 'Done', 'Blocked']
 
     id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=True)
     title = db.Column(db.String(200), nullable=False)
     notes = db.Column(db.Text)           # Rich text HTML from Quill
     status = db.Column(db.String(20), default='Not Started')
@@ -120,6 +120,10 @@ class Task(db.Model):
         backref='linked_task',
         lazy=True
     )
+
+    @property
+    def is_quick_task(self) -> bool:
+        return self.project_id is None
 
     @property
     def is_overdue(self) -> bool:

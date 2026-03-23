@@ -40,6 +40,14 @@ def index():
         .all()
     )
 
+    # Quick tasks: no project, no due date, not done
+    tasks_quick = (
+        Task.query
+        .filter(Task.project_id.is_(None), Task.due_date.is_(None), Task.status != 'Done')
+        .order_by(Task.created_at.desc())
+        .all()
+    )
+
     # Weekly completion progress
     week_total = Task.query.filter(
         Task.due_date >= week_start,
@@ -61,6 +69,7 @@ def index():
         tasks_today=tasks_today,
         tasks_week=tasks_week,
         tasks_overdue=tasks_overdue,
+        tasks_quick=tasks_quick,
         week_total=week_total,
         week_done=week_done,
         weekly_pct=weekly_pct,

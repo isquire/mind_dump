@@ -129,6 +129,41 @@
 </div>
 {% endif %}
 
+{# ── Quick Tasks ──────────────────────────────────────────────────────────── #}
+{% if tasks_quick %}
+<div class="mb-4">
+  <h2 class="h6 text-muted fw-semibold text-uppercase mb-2">
+    <i class="bi bi-lightning-charge"></i> Quick Tasks
+  </h2>
+  <div class="list-group shadow-sm">
+    {% for task in tasks_quick %}
+    <div class="list-group-item list-group-item-action">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1 me-2">
+          <span class="fw-semibold">{{ task.title }}</span>
+          <div class="mt-1">
+            <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
+          </div>
+        </div>
+        <div class="d-flex gap-1 flex-shrink-0">
+          <a href="{{ url_for('focus.view', task_id=task.id) }}"
+             class="btn btn-sm btn-outline-primary" title="Focus mode">
+            <i class="bi bi-fullscreen"></i>
+          </a>
+          <form method="POST" action="{{ url_for('tasks.complete', task_id=task.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-success" title="Mark done">
+              <i class="bi bi-check-lg"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {# ── Today & This Week ─────────────────────────────────────────────────────── #}
 <div class="row g-4">
 

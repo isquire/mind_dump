@@ -24,7 +24,11 @@ class TaskForm(FlaskForm):
         ],
         validators=[Optional()]
     )
-    project_id = SelectField('Project', coerce=int, validators=[DataRequired()])
+    project_id = SelectField(
+        'Project (optional)',
+        coerce=lambda x: int(x) if x else None,
+        validators=[Optional()]
+    )
     due_date = DateField('Due Date (optional)', validators=[Optional()])
     external_link = StringField('External Link (optional)', validators=[Optional(), validate_url])
     submit = SubmitField('Save Task')

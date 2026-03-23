@@ -24,9 +24,9 @@ def _sanitize_notes(html: str) -> str:
 
 
 def _populate_project_choices(form):
-    """Fill the project_id select."""
+    """Fill the project_id select with a blank 'no project' option first."""
     projects = Project.query.order_by(Project.title).all()
-    form.project_id.choices = [(p.id, p.title) for p in projects]
+    form.project_id.choices = [('', '— No project (Quick Task) —')] + [(p.id, p.title) for p in projects]
     return projects
 
 
@@ -35,10 +35,6 @@ def _populate_project_choices(form):
 def new():
     form = TaskForm()
     projects = _populate_project_choices(form)
-
-    if not projects:
-        flash('Create a Project first before adding a task.', 'warning')
-        return redirect(url_for('projects.new'))
 
     from_dump_id = request.args.get('from_dump', type=int)
     preselect_project = request.args.get('project_id', type=int)
@@ -70,7 +66,9 @@ def new():
 
         db.session.commit()
         flash(f'Task "{task.title}" created!', 'success')
-        return redirect(url_for('projects.detail', project_id=task.project_id))
+        if task.project_id:
+            return redirect(url_for('projects.detail', project_id=task.project_id))
+        return redirect(url_for('dashboard.index'))
 
     return render_template('tasks/form.html', form=form, task=None)
 
@@ -81,6 +79,8 @@ def edit(task_id):
     task = db.get_or_404(Task, task_id)
     form = TaskForm(obj=task)
     _populate_project_choices(form)
+    if request.method == 'GET':
+        form.project_id.data = task.project_id if task.project_id else ''
 
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
@@ -97,7 +97,9 @@ def edit(task_id):
             task.completed_at = None
         db.session.commit()
         flash(f'Task "{task.title}" updated.', 'success')
-        return redirect(url_for('projects.detail', project_id=task.project_id))
+        if task.project_id:
+            return redirect(url_for('projects.detail', project_id=task.project_id))
+        return redirect(url_for('dashboard.index'))
 
     return render_template('tasks/form.html', form=form, task=task)
 
@@ -111,7 +113,9 @@ def delete(task_id):
     db.session.delete(task)
     db.session.commit()
     flash(f'Task "{title}" deleted.', 'success')
-    return redirect(url_for('projects.detail', project_id=project_id))
+    if project_id:
+        return redirect(url_for('projects.detail', project_id=project_id))
+    return redirect(url_for('dashboard.index'))
 
 
 @tasks_bp.route('/<int:task_id>/pin', methods=['POST'])

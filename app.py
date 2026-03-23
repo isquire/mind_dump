@@ -117,10 +117,43 @@ def create_app() -> Flask:
 # First-run setup: prompt for initial user via CLI if none exists
 # ---------------------------------------------------------------------------
 
+def _migrate_nullable_project_id(engine) -> None:
+    """Make tasks.project_id nullable if it isn't already (one-time migration)."""
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        rows = conn.execute(text("PRAGMA table_info(tasks)")).fetchall()
+        col = next((r for r in rows if r[1] == 'project_id'), None)
+        if col is None or col[3] == 0:
+            return  # column missing or already nullable — nothing to do
+        # SQLite doesn't support ALTER COLUMN; recreate the table
+        conn.execute(text("PRAGMA foreign_keys = OFF"))
+        conn.execute(text("""
+            CREATE TABLE tasks_new (
+                id INTEGER NOT NULL PRIMARY KEY,
+                project_id INTEGER,
+                title VARCHAR(200) NOT NULL,
+                notes TEXT,
+                status VARCHAR(20),
+                due_date DATE,
+                external_link VARCHAR(500),
+                is_pinned BOOLEAN NOT NULL,
+                created_at DATETIME,
+                completed_at DATETIME,
+                FOREIGN KEY (project_id) REFERENCES projects (id)
+            )
+        """))
+        conn.execute(text("INSERT INTO tasks_new SELECT * FROM tasks"))
+        conn.execute(text("DROP TABLE tasks"))
+        conn.execute(text("ALTER TABLE tasks_new RENAME TO tasks"))
+        conn.execute(text("PRAGMA foreign_keys = ON"))
+        conn.commit()
+
+
 def init_db(app: Flask) -> None:
     """Create tables and create first user interactively if needed."""
     with app.app_context():
         db.create_all()
+        _migrate_nullable_project_id(db.engine)
 
         if User.query.count() == 0:
             print("\n=== First Run Setup ===")
