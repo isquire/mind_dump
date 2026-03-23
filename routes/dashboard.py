@@ -1,66 +1,102 @@
 """Dashboard: quick capture, One Thing, today/week tasks, overdue tasks."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
-from flask import Blueprint, render_template, redirect, url_for, flash
-from flask_login import login_required
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask_login import login_required, current_user
 
 from models import db, Task, MindDump
 from forms.mind_dump import QuickCaptureForm
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
+VALID_VIEWS = ('work', 'all', 'personal')
+
+
+def _default_category() -> str:
+    """Return 'work' during 9 AM–5 PM Mon–Fri, 'personal' otherwise."""
+    now = datetime.now()
+    if now.weekday() < 5 and 9 <= now.hour < 17:
+        return 'work'
+    return 'personal'
+
+
+def _is_work_hours() -> bool:
+    now = datetime.now()
+    return now.weekday() < 5 and 9 <= now.hour < 17
+
+
+def _apply_category_filter(query, view):
+    if view in ('work', 'personal'):
+        return query.filter(Task.category == view)
+    return query  # 'all' — no filter
+
 
 @dashboard_bp.route('/')
 @login_required
 def index():
+    view = current_user.view_preference or 'all'
     today = date.today()
     week_end = today + timedelta(days=7)
     # Monday of current week for progress calculation
     week_start = today - timedelta(days=today.weekday())
     week_progress_end = week_start + timedelta(days=7)
 
-    one_thing = Task.query.filter_by(is_pinned=True).first()
+    one_thing_q = Task.query.filter_by(is_pinned=True)
+    one_thing_q = _apply_category_filter(one_thing_q, view)
+    one_thing = one_thing_q.first()
 
     tasks_today = (
-        Task.query
-        .filter(Task.due_date == today, Task.status != 'Done')
+        _apply_category_filter(
+            Task.query.filter(Task.due_date == today, Task.status != 'Done'), view
+        )
         .order_by(Task.created_at)
         .all()
     )
     tasks_week = (
-        Task.query
-        .filter(Task.due_date > today, Task.due_date <= week_end, Task.status != 'Done')
+        _apply_category_filter(
+            Task.query.filter(Task.due_date > today, Task.due_date <= week_end, Task.status != 'Done'),
+            view,
+        )
         .order_by(Task.due_date)
         .all()
     )
     tasks_overdue = (
-        Task.query
-        .filter(Task.due_date < today, Task.status != 'Done')
+        _apply_category_filter(
+            Task.query.filter(Task.due_date < today, Task.status != 'Done'), view
+        )
         .order_by(Task.due_date)
         .all()
     )
 
     # Quick tasks: no project, no due date, not done
     tasks_quick = (
-        Task.query
-        .filter(Task.project_id.is_(None), Task.due_date.is_(None), Task.status != 'Done')
+        _apply_category_filter(
+            Task.query.filter(Task.project_id.is_(None), Task.due_date.is_(None), Task.status != 'Done'),
+            view,
+        )
         .order_by(Task.created_at.desc())
         .all()
     )
 
-    # Weekly completion progress
-    week_total = Task.query.filter(
-        Task.due_date >= week_start,
-        Task.due_date <= week_progress_end
-    ).count()
-    week_done = Task.query.filter(
+    # Weekly completion progress (scoped to view)
+    week_q_base = Task.query.filter(
         Task.due_date >= week_start,
         Task.due_date <= week_progress_end,
-        Task.status == 'Done'
-    ).count()
+    )
+    if view in ('work', 'personal'):
+        week_q_base = week_q_base.filter(Task.category == view)
+    week_total = week_q_base.count()
+    week_done = week_q_base.filter(Task.status == 'Done').count()
     weekly_pct = int((week_done / week_total * 100) if week_total > 0 else 0)
 
     form = QuickCaptureForm()
+
+    # Context reminder: show banner when view doesn't match current time context
+    work_hours = _is_work_hours()
+    show_context_reminder = (
+        (view == 'personal' and work_hours) or
+        (view == 'work' and not work_hours)
+    )
 
     return render_template(
         'dashboard.html',
@@ -74,7 +110,21 @@ def index():
         week_done=week_done,
         weekly_pct=weekly_pct,
         today=today,
+        current_view=view,
+        work_hours=work_hours,
+        show_context_reminder=show_context_reminder,
+        default_category=_default_category(),
     )
+
+
+@dashboard_bp.route('/set-view', methods=['POST'])
+@login_required
+def set_view():
+    view = request.form.get('view', 'all')
+    if view in VALID_VIEWS:
+        current_user.view_preference = view
+        db.session.commit()
+    return redirect(request.referrer or url_for('dashboard.index'))
 
 
 @dashboard_bp.route('/quick-capture', methods=['POST'])
@@ -82,7 +132,10 @@ def index():
 def quick_capture():
     form = QuickCaptureForm()
     if form.validate_on_submit():
-        entry = MindDump(content=form.content.data.strip())
+        cat = form.category.data or ''
+        if cat not in ('work', 'personal'):
+            cat = _default_category()
+        entry = MindDump(content=form.content.data.strip(), category=cat)
         db.session.add(entry)
         db.session.commit()
         flash('Captured!', 'success')

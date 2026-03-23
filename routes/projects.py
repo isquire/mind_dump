@@ -44,19 +44,24 @@ def new():
     preselect_idea = request.args.get('big_idea_id', type=int)
     if request.method == 'GET':
         prefill = request.args.get('prefill', '')
+        prefill_category = request.args.get('prefill_category', '')
         if prefill:
             form.title.data = prefill[:200]
         if preselect_idea:
             form.big_idea_id.data = preselect_idea
+        if prefill_category in ('work', 'personal'):
+            form.category.data = prefill_category
 
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
+        cat = form.category.data if form.category.data in ('work', 'personal') else 'work'
         project = Project(
             big_idea_id=form.big_idea_id.data,
             title=form.title.data.strip(),
             description=(form.description.data or '').strip(),
             due_date=form.due_date.data or None,
             external_link=link or None,
+            category=cat,
         )
         db.session.add(project)
         db.session.flush()
@@ -88,6 +93,8 @@ def edit(project_id):
         project.description = (form.description.data or '').strip()
         project.due_date = form.due_date.data or None
         project.external_link = link or None
+        if form.category.data in ('work', 'personal'):
+            project.category = form.category.data
         db.session.commit()
         flash(f'Project "{project.title}" updated.', 'success')
         return redirect(url_for('projects.detail', project_id=project.id))

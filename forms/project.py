@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, DateField, SubmitField
+from wtforms import StringField, TextAreaField, SelectField, DateField, SubmitField, HiddenField
 from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 
@@ -14,6 +14,8 @@ class ProjectForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(1, 200)])
     description = TextAreaField('Description', validators=[Optional()])
     big_idea_id = SelectField('Big Idea', coerce=int, validators=[DataRequired()])
+    # Populated by radio buttons in the template (work/personal); falls back to 'work' in route
+    category = HiddenField('Category')
     due_date = DateField('Due Date (optional)', validators=[Optional()])
     external_link = StringField('External Link (optional)', validators=[Optional(), validate_url])
     submit = SubmitField('Save Project')

@@ -23,14 +23,19 @@ def new():
     from_dump_id = request.args.get('from_dump', type=int)
     if request.method == 'GET':
         prefill = request.args.get('prefill', '')
+        prefill_category = request.args.get('prefill_category', '')
         if prefill:
             form.title.data = prefill[:200]
+        if prefill_category in ('work', 'personal'):
+            form.category.data = prefill_category
 
     if form.validate_on_submit():
+        cat = form.category.data if form.category.data in ('work', 'personal') else 'work'
         idea = BigIdea(
             title=form.title.data.strip(),
             description=(form.description.data or '').strip(),
             accent_color=form.accent_color.data or '#6366f1',
+            category=cat,
         )
         db.session.add(idea)
         db.session.flush()  # get idea.id before commit
@@ -59,6 +64,8 @@ def edit(idea_id):
         idea.title = form.title.data.strip()
         idea.description = (form.description.data or '').strip()
         idea.accent_color = form.accent_color.data or '#6366f1'
+        if form.category.data in ('work', 'personal'):
+            idea.category = form.category.data
         db.session.commit()
         flash(f'Big Idea "{idea.title}" updated.', 'success')
         return redirect(url_for('big_ideas.index'))

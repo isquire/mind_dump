@@ -3,6 +3,7 @@ from wtforms import StringField, SelectField, DateField, SubmitField, HiddenFiel
 from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 
+
 def validate_url(form, field):
     """Ensure external link starts with http:// or https:// if provided."""
     val = (field.data or '').strip()
@@ -14,6 +15,8 @@ class TaskForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(1, 200)])
     # notes is populated by the Quill editor via a hidden field
     notes = HiddenField('Notes')
+    # Populated by radio buttons in the template (work/personal); falls back to 'work' in route
+    category = HiddenField('Category')
     status = SelectField(
         'Status (optional)',
         choices=[

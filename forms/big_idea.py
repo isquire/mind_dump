@@ -1,6 +1,6 @@
 import re
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField
+from wtforms import StringField, TextAreaField, HiddenField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 
@@ -12,6 +12,8 @@ def validate_hex_color(form, field):
 class BigIdeaForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(1, 200)])
     description = TextAreaField('Description', validators=[Optional()])
+    # Populated by radio buttons in the template (work/personal); falls back to 'work' in route
+    category = HiddenField('Category')
     accent_color = StringField(
         'Accent Color',
         validators=[Optional(), validate_hex_color],

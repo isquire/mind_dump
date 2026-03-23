@@ -37,9 +37,14 @@
           <a class="nav-link {% if request.endpoint and request.endpoint.startswith('mind_dump') %}active{% endif %}"
              href="{{ url_for('mind_dump.index') }}">
             <i class="bi bi-lightning-fill"></i> Mind Dump
-            {% if unorganized_count > 0 %}
-              <span class="badge bg-warning text-dark ms-1" title="{{ unorganized_count }} unorganized items">
-                {{ unorganized_count }}
+            {% if unorganized_work_count > 0 %}
+              <span class="badge bg-primary ms-1" title="{{ unorganized_work_count }} unorganized work items">
+                W:{{ unorganized_work_count }}
+              </span>
+            {% endif %}
+            {% if unorganized_personal_count > 0 %}
+              <span class="badge bg-success ms-1" title="{{ unorganized_personal_count }} unorganized personal items">
+                P:{{ unorganized_personal_count }}
               </span>
             {% endif %}
           </a>

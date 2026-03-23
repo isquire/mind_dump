@@ -40,13 +40,17 @@ def new():
     preselect_project = request.args.get('project_id', type=int)
     if request.method == 'GET':
         prefill = request.args.get('prefill', '')
+        prefill_category = request.args.get('prefill_category', '')
         if prefill:
             form.title.data = prefill[:200]
         if preselect_project:
             form.project_id.data = preselect_project
+        if prefill_category in ('work', 'personal'):
+            form.category.data = prefill_category
 
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
+        cat = form.category.data if form.category.data in ('work', 'personal') else 'work'
         task = Task(
             project_id=form.project_id.data,
             title=form.title.data.strip(),
@@ -54,6 +58,7 @@ def new():
             status=form.status.data or 'Not Started',
             due_date=form.due_date.data or None,
             external_link=link or None,
+            category=cat,
         )
         db.session.add(task)
         db.session.flush()
@@ -90,6 +95,8 @@ def edit(task_id):
         task.status = form.status.data or 'Not Started'
         task.due_date = form.due_date.data or None
         task.external_link = link or None
+        if form.category.data in ('work', 'personal'):
+            task.category = form.category.data
         # Mark completed_at when status changes to Done
         if task.status == 'Done' and not task.completed_at:
             task.completed_at = datetime.now(timezone.utc)

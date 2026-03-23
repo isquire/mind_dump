@@ -1,4 +1,6 @@
 """Mind Dump: quick-capture list with one-click triage actions."""
+from datetime import datetime
+
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
 
@@ -8,12 +10,25 @@ from forms.mind_dump import QuickCaptureForm
 mind_dump_bp = Blueprint('mind_dump', __name__, url_prefix='/mind-dump')
 
 
+def _default_category() -> str:
+    """Return 'work' during 9 AM–5 PM Mon–Fri, 'personal' otherwise."""
+    now = datetime.now()
+    if now.weekday() < 5 and 9 <= now.hour < 17:
+        return 'work'
+    return 'personal'
+
+
 @mind_dump_bp.route('/')
 @login_required
 def index():
     entries = MindDump.query.order_by(MindDump.created_at.desc()).all()
     form = QuickCaptureForm()
-    return render_template('mind_dump/index.html', entries=entries, form=form)
+    return render_template(
+        'mind_dump/index.html',
+        entries=entries,
+        form=form,
+        default_category=_default_category(),
+    )
 
 
 @mind_dump_bp.route('/capture', methods=['POST'])
@@ -21,7 +36,10 @@ def index():
 def capture():
     form = QuickCaptureForm()
     if form.validate_on_submit():
-        entry = MindDump(content=form.content.data.strip())
+        cat = form.category.data or ''
+        if cat not in ('work', 'personal'):
+            cat = _default_category()
+        entry = MindDump(content=form.content.data.strip(), category=cat)
         db.session.add(entry)
         db.session.commit()
         flash('Captured!', 'success')
@@ -51,22 +69,37 @@ def delete(entry_id):
 @mind_dump_bp.route('/<int:entry_id>/promote-task')
 @login_required
 def promote_task(entry_id):
-    """Redirect to task creation form pre-filled with mind dump content."""
+    """Redirect to task creation form pre-filled with mind dump content and category."""
     entry = db.get_or_404(MindDump, entry_id)
-    return redirect(url_for('tasks.new', from_dump=entry_id, prefill=entry.content))
+    return redirect(url_for(
+        'tasks.new',
+        from_dump=entry_id,
+        prefill=entry.content,
+        prefill_category=entry.category,
+    ))
 
 
 @mind_dump_bp.route('/<int:entry_id>/promote-project')
 @login_required
 def promote_project(entry_id):
-    """Redirect to project creation form pre-filled with mind dump content."""
+    """Redirect to project creation form pre-filled with mind dump content and category."""
     entry = db.get_or_404(MindDump, entry_id)
-    return redirect(url_for('projects.new', from_dump=entry_id, prefill=entry.content))
+    return redirect(url_for(
+        'projects.new',
+        from_dump=entry_id,
+        prefill=entry.content,
+        prefill_category=entry.category,
+    ))
 
 
 @mind_dump_bp.route('/<int:entry_id>/promote-big-idea')
 @login_required
 def promote_big_idea(entry_id):
-    """Redirect to big idea creation form pre-filled with mind dump content."""
+    """Redirect to big idea creation form pre-filled with mind dump content and category."""
     entry = db.get_or_404(MindDump, entry_id)
-    return redirect(url_for('big_ideas.new', from_dump=entry_id, prefill=entry.content))
+    return redirect(url_for(
+        'big_ideas.new',
+        from_dump=entry_id,
+        prefill=entry.content,
+        prefill_category=entry.category,
+    ))

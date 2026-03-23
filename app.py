@@ -89,9 +89,19 @@ def create_app() -> Flask:
     def inject_nav_data():
         if current_user.is_authenticated:
             from models import MindDump
-            count = MindDump.query.filter_by(status='Unorganized').count()
-            return {'unorganized_count': count}
-        return {'unorganized_count': 0}
+            work_count = MindDump.query.filter_by(status='Unorganized', category='work').count()
+            personal_count = MindDump.query.filter_by(status='Unorganized', category='personal').count()
+            total_count = work_count + personal_count
+            return {
+                'unorganized_count': total_count,
+                'unorganized_work_count': work_count,
+                'unorganized_personal_count': personal_count,
+            }
+        return {
+            'unorganized_count': 0,
+            'unorganized_work_count': 0,
+            'unorganized_personal_count': 0,
+        }
 
     # --- Blueprints ---------------------------------------------------------
     from routes.auth import auth_bp
@@ -116,6 +126,25 @@ def create_app() -> Flask:
 # ---------------------------------------------------------------------------
 # First-run setup: prompt for initial user via CLI if none exists
 # ---------------------------------------------------------------------------
+
+def _migrate_add_category_columns(engine) -> None:
+    """Add category/view_preference columns if they don't exist (one-time migration)."""
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        migrations = [
+            ("big_ideas", "category", "VARCHAR(10) NOT NULL DEFAULT 'work'"),
+            ("projects", "category", "VARCHAR(10) NOT NULL DEFAULT 'work'"),
+            ("tasks", "category", "VARCHAR(10) NOT NULL DEFAULT 'work'"),
+            ("mind_dump", "category", "VARCHAR(10) NOT NULL DEFAULT 'work'"),
+            ("users", "view_preference", "VARCHAR(10) NOT NULL DEFAULT 'all'"),
+        ]
+        for table, col, col_def in migrations:
+            rows = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
+            col_names = [r[1] for r in rows]
+            if col not in col_names:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}"))
+        conn.commit()
+
 
 def _migrate_nullable_project_id(engine) -> None:
     """Make tasks.project_id nullable if it isn't already (one-time migration)."""
@@ -154,6 +183,7 @@ def init_db(app: Flask) -> None:
     with app.app_context():
         db.create_all()
         _migrate_nullable_project_id(db.engine)
+        _migrate_add_category_columns(db.engine)
 
         if User.query.count() == 0:
             print("\n=== First Run Setup ===")
