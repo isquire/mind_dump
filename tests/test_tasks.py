@@ -61,10 +61,9 @@ class TestCreateTask:
         assert resp.status_code == 200
         assert Task.query.count() == before
 
-    def test_create_redirects_to_projects_when_no_projects(self, auth_client, db):
+    def test_create_accessible_when_no_projects(self, auth_client, db):
         resp = auth_client.get('/tasks/new')
-        assert resp.status_code == 302
-        assert '/projects/new' in resp.location
+        assert resp.status_code == 200
 
     def test_create_from_mind_dump_marks_assigned(self, auth_client, db, project, mind_dump_entry):
         resp = auth_client.post(
