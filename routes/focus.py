@@ -32,10 +32,8 @@ def complete(task_id):
 @login_required
 def snooze(task_id):
     task = db.get_or_404(Task, task_id)
-    if task.due_date:
-        task.due_date = task.due_date + timedelta(days=1)
-    else:
-        task.due_date = date.today() + timedelta(days=1)
+    # Always snooze to tomorrow regardless of current due date
+    task.due_date = date.today() + timedelta(days=1)
     db.session.commit()
     flash(f'"{task.title}" snoozed to tomorrow.', 'info')
     return redirect(url_for('dashboard.index'))
