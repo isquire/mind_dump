@@ -1,0 +1,160 @@
+/* =========================================================
+   Mind Dump — Custom CSS
+   ADHD-friendly design: clear hierarchy, generous whitespace,
+   color-coded status, calm overdue styling (amber not red).
+   ========================================================= */
+
+/* ── Base ──────────────────────────────────────────────── */
+body {
+  background-color: #f8f9fa;
+  color: #212529;
+}
+
+/* ── Login page ────────────────────────────────────────── */
+.login-body {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+}
+
+.login-card {
+  border-radius: 16px;
+}
+
+/* ── Quick Capture ─────────────────────────────────────── */
+.capture-card {
+  border-radius: 12px;
+  background: #fff;
+}
+
+.capture-card .form-control:focus {
+  box-shadow: none;
+}
+
+/* ── One Thing card ────────────────────────────────────── */
+.one-thing-card {
+  border-radius: 12px;
+  background: #fffbeb;
+}
+
+/* ── Overdue items — amber, never alarming red ─────────── */
+.overdue-item {
+  background-color: #fffbeb !important;
+  border-left: 3px solid #f59e0b !important;
+}
+
+/* ── Color dot for Big Ideas ───────────────────────────── */
+.color-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.color-dot-sm {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Idea cards ────────────────────────────────────────── */
+.idea-card {
+  border-radius: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.idea-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+}
+
+.hover-bg:hover {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+/* ── Quill content display ─────────────────────────────── */
+.quill-content p { margin-bottom: 0.5rem; }
+.quill-content h1, .quill-content h2, .quill-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+}
+.quill-content ul, .quill-content ol { padding-left: 1.5rem; }
+.quill-content blockquote {
+  border-left: 3px solid #6c757d;
+  padding-left: 1rem;
+  color: #6c757d;
+}
+.quill-content pre {
+  background: #f1f3f5;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* ── Slightly faded done tasks ─────────────────────────── */
+.opacity-60 { opacity: 0.6; }
+
+/* ── Letter spacing helper ─────────────────────────────── */
+.letter-spacing-1 { letter-spacing: 0.05em; }
+
+/* ── Focus Mode ────────────────────────────────────────── */
+.focus-mode-body {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+.focus-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 2px 24px rgba(0,0,0,0.07);
+}
+
+/* ── Completion animation ──────────────────────────────── */
+.completion-overlay {
+  opacity: 0;
+  transform: scale(0.8);
+  animation: none;
+}
+
+.completion-overlay.animate-complete {
+  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.completion-checkmark i {
+  display: inline-block;
+  animation: none;
+}
+
+.animate-complete .completion-checkmark i {
+  animation: bounce-in 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes bounce-in {
+  0%   { transform: scale(0); }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* ── Nav active state ──────────────────────────────────── */
+.navbar .nav-link.active {
+  font-weight: 600;
+  color: #fff !important;
+}
+
+/* ── Responsive tweaks ─────────────────────────────────── */
+@media (max-width: 576px) {
+  .focus-card {
+    padding: 1.5rem;
+  }
+}

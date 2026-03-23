@@ -1,0 +1,29 @@
+# Environment — NEVER commit secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# SQLite database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Vendor assets (downloaded by setup_assets.sh — not committed)
+static/vendor/*
+!static/vendor/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

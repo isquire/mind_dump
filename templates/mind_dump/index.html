@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Mind Dump{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0 fw-bold">
+    <i class="bi bi-lightning-fill text-warning"></i> Mind Dump
+  </h1>
+  {% if entries %}
+    <span class="badge bg-secondary">{{ entries | length }} item{{ 's' if entries | length != 1 }}</span>
+  {% endif %}
+</div>
+
+{# ── Quick capture on this page too ──────────────────────────────────────── #}
+<div class="card capture-card mb-4 border-0 shadow-sm">
+  <div class="card-body py-3">
+    <form method="POST" action="{{ url_for('mind_dump.capture') }}" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="input-group input-group-lg">
+        {{ form.content(
+            class="form-control border-0 bg-light",
+            placeholder="Capture a thought…",
+            autocomplete="off",
+            autofocus=true,
+            aria_label="Quick capture"
+        ) }}
+        <button type="submit" class="btn btn-warning fw-bold px-4">
+          <i class="bi bi-lightning-fill"></i> Capture
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Filter tabs ──────────────────────────────────────────────────────────── #}
+<ul class="nav nav-pills mb-3" id="dump-tabs" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" href="#" data-filter="all">All</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#" data-filter="Unorganized">
+      Unorganized
+      {% set ucount = entries | selectattr('status', 'eq', 'Unorganized') | list | length %}
+      {% if ucount > 0 %}
+        <span class="badge bg-warning text-dark ms-1">{{ ucount }}</span>
+      {% endif %}
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#" data-filter="Someday">Someday/Maybe</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#" data-filter="Assigned">Assigned</a>
+  </li>
+</ul>
+
+{# ── Entries list ──────────────────────────────────────────────────────────── #}
+{% if entries %}
+  <div class="list-group shadow-sm" id="dump-list">
+    {% for entry in entries %}
+    <div class="list-group-item dump-item" data-status="{{ entry.status }}">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+
+        {# Content + meta #}
+        <div class="flex-grow-1">
+          <span class="{% if entry.status == 'Assigned' %}text-muted text-decoration-line-through{% endif %}">
+            {{ entry.content }}
+          </span>
+          <div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
+            <small class="text-muted">
+              {{ entry.created_at.strftime('%d %b %Y, %H:%M') }}
+            </small>
+            {% if entry.status == 'Unorganized' %}
+              <span class="badge bg-warning text-dark">Unorganized</span>
+            {% elif entry.status == 'Someday' %}
+              <span class="badge bg-secondary">Someday/Maybe</span>
+            {% elif entry.status == 'Assigned' %}
+              <span class="badge bg-success">Assigned</span>
+              {% if entry.linked_task %}
+                <small class="text-muted">→ Task: {{ entry.linked_task.title }}</small>
+              {% elif entry.linked_project %}
+                <small class="text-muted">→ Project: {{ entry.linked_project.title }}</small>
+              {% elif entry.linked_big_idea %}
+                <small class="text-muted">→ Big Idea: {{ entry.linked_big_idea.title }}</small>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+
+        {# Actions #}
+        {% if entry.status != 'Assigned' %}
+        <div class="d-flex flex-wrap gap-1 flex-shrink-0">
+          <a href="{{ url_for('mind_dump.promote_task', entry_id=entry.id) }}"
+             class="btn btn-sm btn-outline-primary" title="Promote to Task">
+            <i class="bi bi-check2-square"></i> Task
+          </a>
+          <a href="{{ url_for('mind_dump.promote_project', entry_id=entry.id) }}"
+             class="btn btn-sm btn-outline-success" title="Promote to Project">
+            <i class="bi bi-kanban"></i> Project
+          </a>
+          <a href="{{ url_for('mind_dump.promote_big_idea', entry_id=entry.id) }}"
+             class="btn btn-sm btn-outline-secondary" title="Promote to Big Idea">
+            <i class="bi bi-stars"></i> Idea
+          </a>
+          {% if entry.status != 'Someday' %}
+          <form method="POST" action="{{ url_for('mind_dump.mark_someday', entry_id=entry.id) }}"
+                class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Someday/Maybe">
+              <i class="bi bi-moon"></i> Someday
+            </button>
+          </form>
+          {% endif %}
+          <form method="POST" action="{{ url_for('mind_dump.delete', entry_id=entry.id) }}"
+                class="d-inline"
+                data-confirm="Delete this entry?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+        {% else %}
+        <form method="POST" action="{{ url_for('mind_dump.delete', entry_id=entry.id) }}"
+              class="d-inline flex-shrink-0"
+              data-confirm="Delete this entry?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+        {% endif %}
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
+    <p>Your mind dump is empty. Capture something!</p>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Simple client-side filter for dump entries
+document.querySelectorAll('[data-filter]').forEach(function (tab) {
+  tab.addEventListener('click', function (e) {
+    e.preventDefault();
+    document.querySelectorAll('[data-filter]').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    const filter = this.dataset.filter;
+    document.querySelectorAll('.dump-item').forEach(function (item) {
+      item.style.display = (filter === 'all' || item.dataset.status === filter) ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if project else 'New' }} Project{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('big_ideas.index') }}">Big Ideas</a></li>
+        <li class="breadcrumb-item active">{{ 'Edit Project' if project else 'New Project' }}</li>
+      </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pt-4 pb-0">
+        <h1 class="h4 fw-bold mb-0">
+          <i class="bi bi-kanban-fill"></i>
+          {{ 'Edit Project' if project else 'New Project' }}
+        </h1>
+      </div>
+      <div class="card-body p-4">
+
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""),
+                         id="title", autofocus=true, placeholder="What are you building or doing?") }}
+            {% for error in form.title.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <label for="description" class="form-label fw-semibold">Description</label>
+            {{ form.description(class="form-control", id="description", rows=3,
+                               placeholder="A sentence or two about this project.") }}
+          </div>
+
+          <div class="mb-3">
+            <label for="big_idea_id" class="form-label fw-semibold">Big Idea <span class="text-danger">*</span></label>
+            {{ form.big_idea_id(class="form-select" + (" is-invalid" if form.big_idea_id.errors else ""),
+                               id="big_idea_id") }}
+            {% for error in form.big_idea_id.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <label for="due_date" class="form-label fw-semibold">Due Date <span class="text-muted fw-normal">(optional)</span></label>
+            {{ form.due_date(class="form-control", id="due_date", type="date") }}
+          </div>
+
+          <div class="mb-4">
+            <label for="external_link" class="form-label fw-semibold">
+              External Link <span class="text-muted fw-normal">(optional)</span>
+            </label>
+            {{ form.external_link(class="form-control" + (" is-invalid" if form.external_link.errors else ""),
+                                  id="external_link",
+                                  placeholder="https://app.linear.app/…") }}
+            {% for error in form.external_link.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+            <small class="text-muted">
+              If set, an "Open in Planner" button and "Tracked externally" badge will appear.
+            </small>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg"></i> {{ 'Save Changes' if project else 'Create Project' }}
+            </button>
+            <a href="{{ url_for('projects.index') }}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

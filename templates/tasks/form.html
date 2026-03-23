@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if task else 'New' }} Task{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-md-9 col-lg-7">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('projects.index') }}">Projects</a></li>
+        <li class="breadcrumb-item active">{{ 'Edit Task' if task else 'New Task' }}</li>
+      </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pt-4 pb-0">
+        <h1 class="h4 fw-bold mb-0">
+          <i class="bi bi-check2-square"></i>
+          {{ 'Edit Task' if task else 'New Task' }}
+        </h1>
+      </div>
+      <div class="card-body p-4">
+
+        <form method="POST" id="task-form" novalidate>
+          {{ form.hidden_tag() }}
+
+          {# Title #}
+          <div class="mb-3">
+            <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""),
+                         id="title", autofocus=true, placeholder="What needs to be done?") }}
+            {% for error in form.title.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          {# Project #}
+          <div class="mb-3">
+            <label for="project_id" class="form-label fw-semibold">Project <span class="text-danger">*</span></label>
+            {{ form.project_id(class="form-select" + (" is-invalid" if form.project_id.errors else ""),
+                              id="project_id") }}
+            {% for error in form.project_id.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="row g-3 mb-3">
+            {# Status #}
+            <div class="col-sm-6">
+              <label for="status" class="form-label fw-semibold">
+                Status <span class="text-muted fw-normal">(optional)</span>
+              </label>
+              {{ form.status(class="form-select", id="status") }}
+            </div>
+            {# Due date #}
+            <div class="col-sm-6">
+              <label for="due_date" class="form-label fw-semibold">
+                Due Date <span class="text-muted fw-normal">(optional)</span>
+              </label>
+              {{ form.due_date(class="form-control", id="due_date", type="date") }}
+            </div>
+          </div>
+
+          {# External link #}
+          <div class="mb-4">
+            <label for="external_link" class="form-label fw-semibold">
+              External Link <span class="text-muted fw-normal">(optional)</span>
+            </label>
+            {{ form.external_link(class="form-control" + (" is-invalid" if form.external_link.errors else ""),
+                                  id="external_link",
+                                  placeholder="https://…") }}
+            {% for error in form.external_link.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+            <small class="text-muted">
+              If set, shows an "Open in Planner" button and "Tracked externally" badge.
+            </small>
+          </div>
+
+          {# Rich text notes via Quill #}
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Notes <span class="text-muted fw-normal">(optional)</span></label>
+            <div id="quill-editor" style="min-height: 160px;"
+                 class="border rounded bg-white">{{ task.notes | safe if task and task.notes else '' }}</div>
+            {# Hidden field populated by JS before submit #}
+            {{ form.notes(id="notes-hidden") }}
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg"></i> {{ 'Save Changes' if task else 'Create Task' }}
+            </button>
+            {% if task %}
+              <a href="{{ url_for('projects.detail', project_id=task.project_id) }}"
+                 class="btn btn-outline-secondary">Cancel</a>
+            {% else %}
+              <a href="{{ url_for('projects.index') }}" class="btn btn-outline-secondary">Cancel</a>
+            {% endif %}
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/quill.snow.css') }}">
+<script src="{{ url_for('static', filename='vendor/quill.min.js') }}"></script>
+<script>
+(function () {
+  var quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    placeholder: 'Add notes, links, context…',
+    modules: {
+      toolbar: [
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['blockquote', 'code-block'],
+        ['link'],
+        ['clean']
+      ]
+    }
+  });
+
+  // On form submit, copy Quill HTML into hidden field
+  document.getElementById('task-form').addEventListener('submit', function () {
+    document.getElementById('notes-hidden').value = quill.root.innerHTML;
+  });
+}());
+</script>
+{% endblock %}

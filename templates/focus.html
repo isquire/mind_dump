@@ -1,0 +1,121 @@
+{% extends "focus_base.html" %}
+{% block title %}{{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="focus-container d-flex flex-column align-items-center justify-content-center min-vh-100 px-3">
+
+  {# Exit link — small, unobtrusive #}
+  <div class="position-fixed top-0 start-0 p-3">
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-sm btn-outline-secondary opacity-50">
+      <i class="bi bi-arrow-left"></i> Back
+    </a>
+  </div>
+
+  <div class="focus-card w-100" style="max-width: 640px;">
+
+    {# Completion overlay #}
+    {% if just_completed %}
+    <div id="completion-overlay" class="completion-overlay text-center mb-4">
+      <div class="completion-checkmark">
+        <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+      </div>
+      <h2 class="mt-3 fw-bold text-success">Done!</h2>
+      <p class="text-muted">Great work completing this task.</p>
+      <a href="{{ url_for('dashboard.index') }}" class="btn btn-success mt-2">
+        <i class="bi bi-house-fill"></i> Back to Dashboard
+      </a>
+    </div>
+    {% endif %}
+
+    {# Task header #}
+    <div class="mb-4 {% if just_completed %}opacity-50{% endif %}">
+      {% if task.project %}
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-2">
+            {% if task.project.big_idea %}
+              <li class="breadcrumb-item text-muted small">{{ task.project.big_idea.title }}</li>
+            {% endif %}
+            <li class="breadcrumb-item text-muted small">{{ task.project.title }}</li>
+          </ol>
+        </nav>
+      {% endif %}
+
+      <h1 class="display-5 fw-bold mb-3">{{ task.title }}</h1>
+
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        {% if task.status %}
+          <span class="badge {{ task.status_badge_class }} fs-6">{{ task.status }}</span>
+        {% endif %}
+        {% if task.due_date %}
+          <span class="badge {% if task.is_overdue %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %} fs-6">
+            <i class="bi bi-calendar"></i>
+            {% if task.is_overdue %}Overdue · {% endif %}
+            {{ task.due_date.strftime('%A, %d %b %Y') }}
+          </span>
+        {% endif %}
+        {% if task.external_link %}
+          <span class="badge bg-info text-dark fs-6">
+            <i class="bi bi-box-arrow-up-right"></i> Tracked externally
+          </span>
+        {% endif %}
+      </div>
+
+      {% if task.external_link %}
+        <a href="{{ task.external_link }}" target="_blank" rel="noopener noreferrer"
+           class="btn btn-info mb-3">
+          <i class="bi bi-box-arrow-up-right"></i> Open in Planner
+        </a>
+      {% endif %}
+    </div>
+
+    {# Notes (Quill HTML output) #}
+    {% if task.notes %}
+    <div class="card border-0 bg-light mb-4 {% if just_completed %}opacity-50{% endif %}">
+      <div class="card-body quill-content">
+        {{ task.notes | safe }}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Action buttons #}
+    {% if not just_completed %}
+    <div class="d-flex flex-wrap gap-3 justify-content-center">
+      <form method="POST" action="{{ url_for('focus.complete', task_id=task.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-success btn-lg fw-bold px-5">
+          <i class="bi bi-check-circle-fill"></i> Mark Complete
+        </button>
+      </form>
+
+      <form method="POST" action="{{ url_for('focus.snooze', task_id=task.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-secondary btn-lg">
+          <i class="bi bi-alarm"></i> Snooze to Tomorrow
+        </button>
+      </form>
+    </div>
+
+    <div class="text-center mt-3">
+      <a href="{{ url_for('tasks.edit', task_id=task.id) }}" class="btn btn-sm btn-link text-muted">
+        <i class="bi bi-pencil"></i> Edit task
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if just_completed %}
+<script>
+  // Trigger completion animation on page load
+  document.addEventListener('DOMContentLoaded', function () {
+    const overlay = document.getElementById('completion-overlay');
+    if (overlay) {
+      overlay.classList.add('animate-complete');
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}
