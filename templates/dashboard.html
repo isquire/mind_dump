@@ -3,56 +3,12 @@
 
 {% block content %}
 
-{# ── Work / All / Personal toggle ─────────────────────────────────────────── #}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div class="btn-group" role="group" aria-label="View toggle">
-    {% for v, label, icon in [('work', 'Work', 'bi-briefcase-fill'), ('all', 'All', 'bi-grid-fill'), ('personal', 'Personal', 'bi-house-heart-fill')] %}
-    <form method="POST" action="{{ url_for('dashboard.set_view') }}" class="d-inline">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="view" value="{{ v }}">
-      <button type="submit"
-              class="btn btn-sm {% if current_view == v %}{% if v == 'work' %}btn-primary{% elif v == 'personal' %}btn-success{% else %}btn-secondary{% endif %}{% else %}btn-outline-secondary{% endif %}">
-        <i class="bi {{ icon }}"></i><span class="d-none d-sm-inline"> {{ label }}</span>
-      </button>
-    </form>
-    {% endfor %}
-  </div>
-  <small class="text-muted fst-italic d-none d-sm-block">
-    {% if current_view == 'work' %}Showing work items only
-    {% elif current_view == 'personal' %}Showing personal items only
-    {% else %}Showing all items
-    {% endif %}
-  </small>
-</div>
-
-{# ── Context reminder banner ──────────────────────────────────────────────── #}
-{% if show_context_reminder %}
-<div class="alert alert-light border py-2 mb-3 d-flex justify-content-between align-items-center">
-  <small class="text-muted">
-    <i class="bi bi-clock"></i>
-    {% if current_view == 'personal' and work_hours %}
-      Viewing <strong>personal</strong> items during work hours.
-    {% else %}
-      Viewing <strong>work</strong> items outside work hours.
-    {% endif %}
-  </small>
-  <form method="POST" action="{{ url_for('dashboard.set_view') }}" class="d-inline ms-2">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="view" value="{{ 'work' if work_hours else 'personal' }}">
-    <button type="submit" class="btn btn-sm btn-outline-secondary py-0">
-      Switch to {{ 'Work' if work_hours else 'Personal' }}
-    </button>
-  </form>
-</div>
-{% endif %}
-
 {# ── Quick Capture ────────────────────────────────────────────────────────── #}
 <div class="card capture-card mb-4 border-0 shadow-sm">
   <div class="card-body py-3">
     <form method="POST" action="{{ url_for('dashboard.quick_capture') }}"
           id="quick-capture-form" novalidate>
       {{ form.hidden_tag() }}
-      {{ form.category(id="capture-category-input") }}
       <div class="input-group input-group-lg">
         {{ form.content(
             class="form-control border-0 bg-light",
@@ -61,13 +17,6 @@
             autocomplete="off",
             aria_label="Quick capture"
         ) }}
-        {# Category toggle button — shows current category, click to flip #}
-        <button type="button" id="capture-category-btn"
-                class="btn btn-outline-secondary"
-                title="Toggle work/personal">
-          <i class="bi bi-briefcase-fill" id="capture-category-icon"></i>
-          <span id="capture-category-label" class="d-none d-sm-inline"> Work</span>
-        </button>
         <button type="submit" class="btn btn-warning fw-bold px-4">
           <i class="bi bi-lightning-fill"></i><span class="d-none d-sm-inline"> Capture</span>
         </button>
@@ -312,37 +261,4 @@
 
 </div>
 
-{% endblock %}
-
-{% block scripts %}
-<script>
-(function () {
-  var defaultCat = {{ default_category | tojson }};
-  var currentCat = defaultCat;
-  var input = document.getElementById('capture-category-input');
-  var btn   = document.getElementById('capture-category-btn');
-  var icon  = document.getElementById('capture-category-icon');
-  var label = document.getElementById('capture-category-label');
-
-  function updateBtn(cat) {
-    if (cat === 'work') {
-      btn.className  = 'btn btn-outline-primary';
-      icon.className = 'bi bi-briefcase-fill';
-      label.textContent = ' Work';
-    } else {
-      btn.className  = 'btn btn-outline-success';
-      icon.className = 'bi bi-house-heart-fill';
-      label.textContent = ' Personal';
-    }
-    input.value = cat;
-  }
-
-  updateBtn(currentCat);
-
-  btn.addEventListener('click', function () {
-    currentCat = (currentCat === 'work') ? 'personal' : 'work';
-    updateBtn(currentCat);
-  });
-}());
-</script>
 {% endblock %}

@@ -20,11 +20,6 @@ def _default_category() -> str:
     return 'personal'
 
 
-def _is_work_hours() -> bool:
-    now = datetime.now()
-    return now.weekday() < 5 and 9 <= now.hour < 17
-
-
 def _apply_category_filter(query, view):
     if view in ('work', 'personal'):
         return query.filter(Task.category == view)
@@ -91,13 +86,6 @@ def index():
 
     form = QuickCaptureForm()
 
-    # Context reminder: show banner when view doesn't match current time context
-    work_hours = _is_work_hours()
-    show_context_reminder = (
-        (view == 'personal' and work_hours) or
-        (view == 'work' and not work_hours)
-    )
-
     return render_template(
         'dashboard.html',
         form=form,
@@ -110,10 +98,6 @@ def index():
         week_done=week_done,
         weekly_pct=weekly_pct,
         today=today,
-        current_view=view,
-        work_hours=work_hours,
-        show_context_reminder=show_context_reminder,
-        default_category=_default_category(),
     )
 
 
@@ -132,9 +116,9 @@ def set_view():
 def quick_capture():
     form = QuickCaptureForm()
     if form.validate_on_submit():
-        cat = form.category.data or ''
-        if cat not in ('work', 'personal'):
-            cat = _default_category()
+        # Capture inherits the active view; 'all' falls back to time-based default
+        view = current_user.view_preference or 'all'
+        cat = view if view in ('work', 'personal') else _default_category()
         entry = MindDump(content=form.content.data.strip(), category=cat)
         db.session.add(entry)
         db.session.commit()

@@ -29,6 +29,11 @@
           <p class="text-muted mb-2">{{ project.description }}</p>
         {% endif %}
         <div class="d-flex flex-wrap gap-2">
+          <span class="badge rounded-pill {% if project.category == 'work' %}bg-primary{% else %}bg-success{% endif %}"
+                style="font-size:.7rem;">
+            <i class="bi {% if project.category == 'work' %}bi-briefcase-fill{% else %}bi-house-heart-fill{% endif %}"></i>
+            {{ project.category | capitalize }}
+          </span>
           {% if project.due_date %}
             <span class="badge {% if project.is_overdue %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">
               <i class="bi bi-calendar"></i>
@@ -111,6 +116,13 @@
               {{ task.title }}
             </span>
             <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
+            {% if task.category != project.category %}
+              <span class="badge rounded-pill {% if task.category == 'work' %}bg-primary{% else %}bg-success{% endif %} opacity-75"
+                    title="This task is categorised as {{ task.category }}, unlike the project"
+                    style="font-size:.65rem;">
+                <i class="bi {% if task.category == 'work' %}bi-briefcase-fill{% else %}bi-house-heart-fill{% endif %}"></i>
+              </span>
+            {% endif %}
             {% if task.external_link %}
               <span class="badge bg-info text-dark">Tracked externally</span>
             {% endif %}

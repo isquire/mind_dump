@@ -63,6 +63,24 @@
         </li>
       </ul>
 
+      {# Work / All / Personal view pill — always visible #}
+      <div class="d-flex align-items-center gap-1 me-2">
+        {% for v, icon, title_text in [('work', 'bi-briefcase-fill', 'Work only'), ('all', 'bi-grid-fill', 'All items'), ('personal', 'bi-house-heart-fill', 'Personal only')] %}
+        <form method="POST" action="{{ url_for('dashboard.set_view') }}" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="view" value="{{ v }}">
+          <button type="submit" title="{{ title_text }}"
+                  class="btn btn-sm rounded-pill px-2 py-1
+                         {% if current_view == v %}
+                           {% if v == 'work' %}btn-primary{% elif v == 'personal' %}btn-success{% else %}btn-secondary{% endif %}
+                         {% else %}btn-outline-secondary{% endif %}"
+                  style="line-height:1; font-size:.75rem;">
+            <i class="bi {{ icon }}"></i>
+          </button>
+        </form>
+        {% endfor %}
+      </div>
+
       {# Logout — always visible #}
       <form method="POST" action="{{ url_for('auth.logout') }}" class="d-flex">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

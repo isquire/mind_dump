@@ -84,7 +84,7 @@ def create_app() -> Flask:
         )
         return response
 
-    # --- Context processor (nav badges) ------------------------------------
+    # --- Context processor (nav badges + view preference) ------------------
     @app.context_processor
     def inject_nav_data():
         if current_user.is_authenticated:
@@ -92,15 +92,18 @@ def create_app() -> Flask:
             work_count = MindDump.query.filter_by(status='Unorganized', category='work').count()
             personal_count = MindDump.query.filter_by(status='Unorganized', category='personal').count()
             total_count = work_count + personal_count
+            view = current_user.view_preference or 'all'
             return {
                 'unorganized_count': total_count,
                 'unorganized_work_count': work_count,
                 'unorganized_personal_count': personal_count,
+                'current_view': view,
             }
         return {
             'unorganized_count': 0,
             'unorganized_work_count': 0,
             'unorganized_personal_count': 0,
+            'current_view': 'all',
         }
 
     # --- Blueprints ---------------------------------------------------------

@@ -1,6 +1,6 @@
 """Big Ideas: CRUD for top-level goal/theme containers."""
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from models import db, BigIdea, MindDump
 from forms.big_idea import BigIdeaForm
@@ -11,7 +11,11 @@ big_ideas_bp = Blueprint('big_ideas', __name__, url_prefix='/big-ideas')
 @big_ideas_bp.route('/')
 @login_required
 def index():
-    ideas = BigIdea.query.order_by(BigIdea.created_at.desc()).all()
+    view = current_user.view_preference or 'all'
+    q = BigIdea.query.order_by(BigIdea.created_at.desc())
+    if view in ('work', 'personal'):
+        q = q.filter(BigIdea.category == view)
+    ideas = q.all()
     return render_template('big_ideas/index.html', ideas=ideas)
 
 

@@ -19,9 +19,15 @@
       <div class="card h-100 border-0 shadow-sm idea-card"
            style="border-left: 4px solid {{ idea.accent_color }} !important;">
         <div class="card-header d-flex justify-content-between align-items-center border-0 pb-0 bg-transparent">
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="color-dot" style="background: {{ idea.accent_color }};"></span>
             <h2 class="h5 mb-0 fw-bold">{{ idea.title }}</h2>
+            {% if current_view == 'all' %}
+              <span class="badge rounded-pill {% if idea.category == 'work' %}bg-primary{% else %}bg-success{% endif %} opacity-75"
+                    style="font-size:.65rem;">
+                <i class="bi {% if idea.category == 'work' %}bi-briefcase-fill{% else %}bi-house-heart-fill{% endif %}"></i>
+              </span>
+            {% endif %}
           </div>
           <div class="d-flex gap-1">
             <a href="{{ url_for('big_ideas.edit', idea_id=idea.id) }}"
@@ -102,7 +108,13 @@
 {% else %}
   <div class="text-center py-5 text-muted">
     <i class="bi bi-stars display-4 d-block mb-3 opacity-25"></i>
-    <p class="mb-3">No big ideas yet. Start with something exciting!</p>
+    {% if current_view == 'work' %}
+      <p class="mb-3">No work big ideas yet.</p>
+    {% elif current_view == 'personal' %}
+      <p class="mb-3">No personal big ideas yet.</p>
+    {% else %}
+      <p class="mb-3">No big ideas yet. Start with something exciting!</p>
+    {% endif %}
     <a href="{{ url_for('big_ideas.new') }}" class="btn btn-primary">
       <i class="bi bi-plus-lg"></i> Create your first Big Idea
     </a>

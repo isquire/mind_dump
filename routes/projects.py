@@ -1,6 +1,6 @@
 """Projects: CRUD for projects belonging to a Big Idea."""
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from models import db, Project, BigIdea, MindDump
 from forms.project import ProjectForm
@@ -18,7 +18,11 @@ def _populate_big_idea_choices(form):
 @projects_bp.route('/')
 @login_required
 def index():
-    projects = Project.query.order_by(Project.created_at.desc()).all()
+    view = current_user.view_preference or 'all'
+    q = Project.query.order_by(Project.created_at.desc())
+    if view in ('work', 'personal'):
+        q = q.filter(Project.category == view)
+    projects = q.all()
     return render_template('projects/index.html', projects=projects)
 
 
