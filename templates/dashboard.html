@@ -150,6 +150,21 @@
              class="btn btn-sm btn-outline-primary" title="Focus mode">
             <i class="bi bi-fullscreen"></i>
           </a>
+          {% if task.is_pinned %}
+          <form method="POST" action="{{ url_for('tasks.unpin', task_id=task.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-warning" title="Unpin One Thing">
+              <i class="bi bi-pin-fill"></i>
+            </button>
+          </form>
+          {% else %}
+          <form method="POST" action="{{ url_for('tasks.pin', task_id=task.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Set as One Thing">
+              <i class="bi bi-pin-angle"></i>
+            </button>
+          </form>
+          {% endif %}
           <form method="POST" action="{{ url_for('tasks.complete', task_id=task.id) }}" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-sm btn-outline-success" title="Mark done">
