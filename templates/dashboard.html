@@ -9,6 +9,7 @@
     <form method="POST" action="{{ url_for('dashboard.quick_capture') }}"
           id="quick-capture-form" novalidate>
       {{ form.hidden_tag() }}
+      {{ form.category(id="capture-category") }}
       <div class="input-group input-group-lg">
         {{ form.content(
             class="form-control border-0 bg-light",
@@ -21,7 +22,35 @@
           <i class="bi bi-lightning-fill"></i><span class="d-none d-sm-inline"> Capture</span>
         </button>
       </div>
+      <div class="d-flex gap-2 mt-2">
+        <button type="button" id="capture-cat-work"
+                class="btn btn-sm {% if current_view == 'work' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                onclick="setCaptureCategory('work')">
+          <i class="bi bi-briefcase-fill"></i> Work
+        </button>
+        <button type="button" id="capture-cat-personal"
+                class="btn btn-sm {% if current_view == 'personal' %}btn-success{% else %}btn-outline-success{% endif %}"
+                onclick="setCaptureCategory('personal')">
+          <i class="bi bi-house-heart-fill"></i> Personal
+        </button>
+      </div>
     </form>
+    <script>
+    (function () {
+      var catField = document.getElementById('capture-category');
+      {% if current_view in ('work', 'personal') %}
+      catField.value = '{{ current_view }}';
+      {% endif %}
+
+      window.setCaptureCategory = function (cat) {
+        catField.value = cat;
+        document.getElementById('capture-cat-work').className =
+          'btn btn-sm ' + (cat === 'work' ? 'btn-primary' : 'btn-outline-primary');
+        document.getElementById('capture-cat-personal').className =
+          'btn btn-sm ' + (cat === 'personal' ? 'btn-success' : 'btn-outline-success');
+      };
+    }());
+    </script>
   </div>
 </div>
 

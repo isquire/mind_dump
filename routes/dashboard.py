@@ -128,9 +128,14 @@ def set_view():
 def quick_capture():
     form = QuickCaptureForm()
     if form.validate_on_submit():
-        # Capture inherits the active view; 'all' falls back to time-based default
-        view = current_user.view_preference or 'all'
-        cat = view if view in ('work', 'personal') else default_category()
+        # Use the category the user explicitly chose; fall back to view preference
+        # or time-of-day default when neither is set.
+        chosen = form.category.data
+        if chosen in ('work', 'personal'):
+            cat = chosen
+        else:
+            view = current_user.view_preference or 'all'
+            cat = view if view in ('work', 'personal') else default_category()
         entry = MindDump(content=form.content.data.strip(), category=cat)
         db.session.add(entry)
         db.session.commit()
