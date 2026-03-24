@@ -53,6 +53,8 @@ def new():
 
         db.session.commit()
         flash(f'Big Idea "{idea.title}" created!', 'success')
+        if from_dump_id:
+            return redirect(url_for('mind_dump.index'))
         return redirect(url_for('big_ideas.index'))
 
     return render_template('big_ideas/form.html', form=form, idea=None)

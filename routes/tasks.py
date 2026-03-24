@@ -74,6 +74,8 @@ def new():
 
         db.session.commit()
         flash(f'Task "{task.title}" created!', 'success')
+        if from_dump_id:
+            return redirect(url_for('mind_dump.index'))
         if task.project_id:
             return redirect(url_for('projects.detail', project_id=task.project_id))
         return redirect(url_for('dashboard.index'))

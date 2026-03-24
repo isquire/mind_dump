@@ -78,6 +78,8 @@ def new():
 
         db.session.commit()
         flash(f'Project "{project.title}" created!', 'success')
+        if from_dump_id:
+            return redirect(url_for('mind_dump.index'))
         return redirect(url_for('projects.detail', project_id=project.id))
 
     return render_template('projects/form.html', form=form, project=None)
