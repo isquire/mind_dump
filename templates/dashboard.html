@@ -140,6 +140,10 @@
             <i class="bi bi-arrow-right-circle"></i><span class="d-none d-sm-inline"> Tomorrow</span>
           </button>
         </form>
+        <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+           class="btn btn-sm btn-outline-secondary" title="Edit">
+          <i class="bi bi-pencil"></i>
+        </a>
         <a href="{{ url_for('focus.view', task_id=task.id) }}"
            class="btn btn-sm btn-outline-secondary" title="Focus mode">
           <i class="bi bi-fullscreen"></i>
@@ -171,6 +175,10 @@
           <a href="{{ url_for('focus.view', task_id=task.id) }}"
              class="btn btn-sm btn-outline-primary" title="Focus mode">
             <i class="bi bi-fullscreen"></i>
+          </a>
+          <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+             class="btn btn-sm btn-outline-secondary" title="Edit">
+            <i class="bi bi-pencil"></i>
           </a>
           {% if task.is_pinned %}
           <form method="POST" action="{{ url_for('tasks.unpin', task_id=task.id) }}" class="d-inline">
@@ -238,6 +246,10 @@
                  class="btn btn-sm btn-outline-primary" title="Focus mode">
                 <i class="bi bi-fullscreen"></i>
               </a>
+              <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+                 class="btn btn-sm btn-outline-secondary" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
               {% if not task.is_pinned %}
               <form method="POST" action="{{ url_for('tasks.pin', task_id=task.id) }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -278,10 +290,16 @@
                 {% endif %}
               </div>
             </div>
-            <a href="{{ url_for('focus.view', task_id=task.id) }}"
-               class="btn btn-sm btn-outline-primary flex-shrink-0" title="Focus mode">
-              <i class="bi bi-fullscreen"></i>
-            </a>
+            <div class="d-flex gap-1 flex-shrink-0">
+              <a href="{{ url_for('focus.view', task_id=task.id) }}"
+                 class="btn btn-sm btn-outline-primary" title="Focus mode">
+                <i class="bi bi-fullscreen"></i>
+              </a>
+              <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+                 class="btn btn-sm btn-outline-secondary" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
+            </div>
           </div>
         </div>
         {% endfor %}
