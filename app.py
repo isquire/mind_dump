@@ -120,6 +120,7 @@ def create_app() -> Flask:
     from routes.big_ideas import big_ideas_bp
     from routes.projects import projects_bp
     from routes.tasks import tasks_bp
+    from routes.reports import reports_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -128,6 +129,7 @@ def create_app() -> Flask:
     app.register_blueprint(big_ideas_bp)
     app.register_blueprint(projects_bp)
     app.register_blueprint(tasks_bp)
+    app.register_blueprint(reports_bp)
 
     return app
 
