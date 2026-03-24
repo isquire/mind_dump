@@ -34,13 +34,36 @@
                class="btn btn-sm btn-outline-secondary" title="Edit">
               <i class="bi bi-pencil"></i>
             </a>
-            <form method="POST" action="{{ url_for('big_ideas.delete', idea_id=idea.id) }}"
-                  data-confirm="Delete '{{ idea.title }}' and all its projects and tasks?">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                <i class="bi bi-trash"></i>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                      data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
+                <i class="bi bi-three-dots"></i>
               </button>
-            </form>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item"
+                     href="{{ url_for('big_ideas.downgrade', idea_id=idea.id, to='project') }}">
+                    <i class="bi bi-kanban me-2 text-primary"></i> Downgrade to Project
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item"
+                     href="{{ url_for('big_ideas.downgrade', idea_id=idea.id, to='task') }}">
+                    <i class="bi bi-check2-square me-2 text-success"></i> Downgrade to Task
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form method="POST" action="{{ url_for('big_ideas.delete', idea_id=idea.id) }}"
+                        data-confirm="Delete '{{ idea.title }}' and all its projects and tasks?">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="dropdown-item text-danger">
+                      <i class="bi bi-trash me-2"></i> Delete
+                    </button>
+                  </form>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
