@@ -1,21 +1,12 @@
 """Mind Dump: quick-capture list with one-click triage actions."""
-from datetime import datetime
-
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
 
 from models import db, MindDump, Task, Project, BigIdea
 from forms.mind_dump import QuickCaptureForm
+from utils import default_category
 
 mind_dump_bp = Blueprint('mind_dump', __name__, url_prefix='/mind-dump')
-
-
-def _default_category() -> str:
-    """Return 'work' during 9 AM–5 PM Mon–Fri, 'personal' otherwise."""
-    now = datetime.now()
-    if now.weekday() < 5 and 9 <= now.hour < 17:
-        return 'work'
-    return 'personal'
 
 
 @mind_dump_bp.route('/')
@@ -27,7 +18,7 @@ def index():
         'mind_dump/index.html',
         entries=entries,
         form=form,
-        default_category=_default_category(),
+        default_category=default_category(),
     )
 
 
@@ -38,7 +29,7 @@ def capture():
     if form.validate_on_submit():
         cat = form.category.data or ''
         if cat not in ('work', 'personal'):
-            cat = _default_category()
+            cat = default_category()
         entry = MindDump(content=form.content.data.strip(), category=cat)
         db.session.add(entry)
         db.session.commit()

@@ -12,7 +12,7 @@ from flask_login import LoginManager, current_user, logout_user
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 
-from models import db, User
+from models import db, User, MindDump
 
 load_dotenv()
 
@@ -88,13 +88,19 @@ def create_app() -> Flask:
     @app.context_processor
     def inject_nav_data():
         if current_user.is_authenticated:
-            from models import MindDump
-            work_count = MindDump.query.filter_by(status='Unorganized', category='work').count()
-            personal_count = MindDump.query.filter_by(status='Unorganized', category='personal').count()
-            total_count = work_count + personal_count
+            from sqlalchemy import func
+            counts = (
+                db.session.query(MindDump.category, func.count(MindDump.id))
+                .filter(MindDump.status == 'Unorganized')
+                .group_by(MindDump.category)
+                .all()
+            )
+            count_map = dict(counts)
+            work_count = count_map.get('work', 0)
+            personal_count = count_map.get('personal', 0)
             view = current_user.view_preference or 'all'
             return {
-                'unorganized_count': total_count,
+                'unorganized_count': work_count + personal_count,
                 'unorganized_work_count': work_count,
                 'unorganized_personal_count': personal_count,
                 'current_view': view,

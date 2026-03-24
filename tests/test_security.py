@@ -195,3 +195,57 @@ class TestPasswordStorage:
         stored = db.session.get(User, u.id)
         assert 'my-super-secret' not in stored.password_hash
         assert stored.password_hash.startswith('$2b$')
+
+
+class TestOpenRedirect:
+    """Referrer-based redirects must not send users to external sites."""
+
+    def test_set_view_rejects_external_referer(self, auth_client):
+        resp = auth_client.post(
+            '/set-view',
+            data={'view': 'work'},
+            headers={'Referer': 'http://evil.example.com/phishing'},
+        )
+        assert resp.status_code == 302
+        assert 'evil.example.com' not in resp.location
+
+    def test_set_view_follows_local_referer(self, auth_client):
+        resp = auth_client.post(
+            '/set-view',
+            data={'view': 'work'},
+            headers={'Referer': 'http://localhost/big-ideas/'},
+        )
+        assert resp.status_code == 302
+        assert '/big-ideas/' in resp.location
+
+    def test_set_view_falls_back_to_dashboard_without_referer(self, auth_client):
+        resp = auth_client.post('/set-view', data={'view': 'work'})
+        assert resp.status_code == 302
+        # Should land on dashboard index
+        assert resp.location.endswith('/')
+
+    def test_pin_rejects_external_referer(self, auth_client, task):
+        resp = auth_client.post(
+            f'/tasks/{task.id}/pin',
+            headers={'Referer': 'http://evil.example.com/'},
+        )
+        assert resp.status_code == 302
+        assert 'evil.example.com' not in resp.location
+
+    def test_unpin_rejects_external_referer(self, auth_client, db, task):
+        task.is_pinned = True
+        db.session.commit()
+        resp = auth_client.post(
+            f'/tasks/{task.id}/unpin',
+            headers={'Referer': 'http://evil.example.com/'},
+        )
+        assert resp.status_code == 302
+        assert 'evil.example.com' not in resp.location
+
+    def test_complete_rejects_external_referer(self, auth_client, task):
+        resp = auth_client.post(
+            f'/tasks/{task.id}/complete',
+            headers={'Referer': 'http://evil.example.com/'},
+        )
+        assert resp.status_code == 302
+        assert 'evil.example.com' not in resp.location

@@ -90,6 +90,9 @@ def edit(project_id):
     form = ProjectForm(obj=project)
     _populate_big_idea_choices(form)
 
+    if request.method == 'GET':
+        form.category.data = project.category
+
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
         project.big_idea_id = form.big_idea_id.data

@@ -3,7 +3,6 @@ from wtforms import StringField, SelectField, DateField, SubmitField, HiddenFiel
 from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 
-
 def validate_url(form, field):
     """Ensure external link starts with http:// or https:// if provided."""
     val = (field.data or '').strip()

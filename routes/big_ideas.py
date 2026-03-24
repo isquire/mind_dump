@@ -64,6 +64,9 @@ def edit(idea_id):
     idea = db.get_or_404(BigIdea, idea_id)
     form = BigIdeaForm(obj=idea)
 
+    if request.method == 'GET':
+        form.category.data = idea.category
+
     if form.validate_on_submit():
         idea.title = form.title.data.strip()
         idea.description = (form.description.data or '').strip()

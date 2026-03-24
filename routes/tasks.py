@@ -7,6 +7,7 @@ from flask_login import login_required
 
 from models import db, Task, Project, MindDump
 from forms.task import TaskForm
+from utils import safe_referrer_redirect
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 
@@ -86,6 +87,7 @@ def edit(task_id):
     _populate_project_choices(form)
     if request.method == 'GET':
         form.project_id.data = task.project_id if task.project_id else ''
+        form.category.data = task.category
 
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
@@ -137,7 +139,7 @@ def pin(task_id):
     task.is_pinned = True
     db.session.commit()
     flash(f'"{task.title}" is your One Thing.', 'success')
-    return redirect(request.referrer or url_for('dashboard.index'))
+    return safe_referrer_redirect('dashboard.index')
 
 
 @tasks_bp.route('/<int:task_id>/unpin', methods=['POST'])
@@ -147,7 +149,7 @@ def unpin(task_id):
     task.is_pinned = False
     db.session.commit()
     flash('One Thing cleared.', 'info')
-    return redirect(request.referrer or url_for('dashboard.index'))
+    return safe_referrer_redirect('dashboard.index')
 
 
 @tasks_bp.route('/<int:task_id>/complete', methods=['POST'])
@@ -159,4 +161,4 @@ def complete(task_id):
     task.is_pinned = False
     db.session.commit()
     flash(f'"{task.title}" done! Great work.', 'success')
-    return redirect(request.referrer or url_for('dashboard.index'))
+    return safe_referrer_redirect('dashboard.index')
