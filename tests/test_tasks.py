@@ -138,6 +138,24 @@ class TestEditTask:
         resp = auth_client.get('/tasks/99999/edit')
         assert resp.status_code == 404
 
+    def test_edit_form_notes_field_is_hidden(self, auth_client, db, task):
+        """notes input must be type=hidden so raw HTML isn't shown to the user."""
+        task.notes = '<p>Some <strong>rich</strong> text</p>'
+        db.session.commit()
+        resp = auth_client.get(f'/tasks/{task.id}/edit')
+        assert b'type="hidden"' in resp.data
+        # The raw HTML should not appear inside a visible text input value
+        assert b'<input type="text"' not in resp.data or \
+               b'<p>Some <strong>rich</strong> text</p>' not in resp.data
+
+    def test_new_form_notes_field_is_hidden(self, auth_client):
+        """notes input on the create form must also be type=hidden."""
+        resp = auth_client.get('/tasks/new')
+        html = resp.data.decode()
+        # Find the notes input — it must not be a visible text field
+        assert 'id="notes-hidden"' in html
+        assert 'id="notes-hidden" name="notes" type="text"' not in html
+
 
 class TestDeleteTask:
     def test_delete_removes_task(self, auth_client, db, task):
