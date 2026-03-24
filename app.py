@@ -187,12 +187,29 @@ def _migrate_nullable_project_id(engine) -> None:
         conn.commit()
 
 
+def _migrate_add_adhd_fields(engine) -> None:
+    """Add estimated_minutes and first_action to tasks if missing (one-time migration)."""
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        migrations = [
+            ("tasks", "estimated_minutes", "INTEGER"),
+            ("tasks", "first_action", "VARCHAR(500)"),
+        ]
+        for table, col, col_def in migrations:
+            rows = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
+            col_names = [r[1] for r in rows]
+            if col not in col_names:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}"))
+        conn.commit()
+
+
 def init_db(app: Flask) -> None:
     """Create tables and create first user interactively if needed."""
     with app.app_context():
         db.create_all()
         _migrate_nullable_project_id(db.engine)
         _migrate_add_category_columns(db.engine)
+        _migrate_add_adhd_fields(db.engine)
 
         if User.query.count() == 0:
             print("\n=== First Run Setup ===")

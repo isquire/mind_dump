@@ -118,6 +118,8 @@ class Task(db.Model):
     category = db.Column(db.String(10), default='work', nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at = db.Column(db.DateTime)
+    estimated_minutes = db.Column(db.Integer)       # nullable, task duration estimate
+    first_action = db.Column(db.String(500))         # nullable, first physical step to start
 
     mind_dump_entries = db.relationship(
         'MindDump',

@@ -60,6 +60,8 @@ def new():
             due_date=form.due_date.data or None,
             external_link=link or None,
             category=cat,
+            estimated_minutes=form.estimated_minutes.data,
+            first_action=(form.first_action.data or '').strip() or None,
         )
         db.session.add(task)
         db.session.flush()
@@ -88,6 +90,7 @@ def edit(task_id):
     if request.method == 'GET':
         form.project_id.data = task.project_id if task.project_id else ''
         form.category.data = task.category
+        form.estimated_minutes.data = str(task.estimated_minutes) if task.estimated_minutes else ''
 
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
@@ -97,6 +100,8 @@ def edit(task_id):
         task.status = form.status.data or 'Not Started'
         task.due_date = form.due_date.data or None
         task.external_link = link or None
+        task.estimated_minutes = form.estimated_minutes.data
+        task.first_action = (form.first_action.data or '').strip() or None
         if form.category.data in ('work', 'personal'):
             task.category = form.category.data
         # Mark completed_at when status changes to Done

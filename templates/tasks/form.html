@@ -81,6 +81,34 @@
             </div>
           </div>
 
+          <div class="row g-3 mb-3">
+            {# Estimated time #}
+            <div class="col-sm-6">
+              <label for="estimated_minutes" class="form-label fw-semibold">
+                Estimated Time <span class="text-muted fw-normal">(optional)</span>
+              </label>
+              {{ form.estimated_minutes(class="form-select", id="estimated_minutes") }}
+            </div>
+            {# Spacer to keep layout consistent #}
+            <div class="col-sm-6"></div>
+          </div>
+
+          {# First physical action #}
+          <div class="mb-3">
+            <label for="first_action" class="form-label fw-semibold">
+              First Physical Action <span class="text-muted fw-normal">(optional)</span>
+            </label>
+            {{ form.first_action(class="form-control" + (" is-invalid" if form.first_action.errors else ""),
+                                 id="first_action",
+                                 placeholder="e.g. Open laptop and pull up the doc") }}
+            {% for error in form.first_action.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+            <small class="text-muted">
+              The very first concrete step. Shown in Focus Mode to help you start.
+            </small>
+          </div>
+
           {# External link #}
           <div class="mb-4">
             <label for="external_link" class="form-label fw-semibold">

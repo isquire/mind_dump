@@ -1,5 +1,5 @@
 """Dashboard: quick capture, One Thing, today/week tasks, overdue tasks."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
@@ -58,6 +58,28 @@ def index():
         .all()
     )
 
+    # ── Streak: consecutive days with ≥1 completed task ────────────────────
+    all_completed = Task.query.filter(Task.completed_at.isnot(None)).with_entities(Task.completed_at).all()
+    completed_dates = {row[0].date() for row in all_completed}
+    streak = 0
+    check = date.today()
+    while check in completed_dates:
+        streak += 1
+        check -= timedelta(days=1)
+
+    # ── Today's completed count ─────────────────────────────────────────────
+    start_of_today = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+    today_done_count = Task.query.filter(Task.completed_at >= start_of_today).count()
+
+    # ── Today's estimated minutes (not-done tasks due today with estimates) ─
+    from sqlalchemy import func as sa_func
+    est_result = db.session.query(sa_func.sum(Task.estimated_minutes)).filter(
+        Task.due_date == today,
+        Task.status != 'Done',
+        Task.estimated_minutes.isnot(None),
+    ).scalar()
+    today_estimated_minutes = est_result or 0
+
     # Weekly completion progress (scoped to view) — single aggregated query
     from sqlalchemy import func, case as sa_case
     week_q = db.session.query(
@@ -85,6 +107,9 @@ def index():
         week_done=week_done,
         weekly_pct=weekly_pct,
         today=today,
+        streak=streak,
+        today_done_count=today_done_count,
+        today_estimated_minutes=today_estimated_minutes,
     )
 
 

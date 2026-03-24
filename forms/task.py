@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, DateField, SubmitField, HiddenField
+from wtforms import StringField, SelectField, DateField, SubmitField, HiddenField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 
@@ -33,4 +33,21 @@ class TaskForm(FlaskForm):
     )
     due_date = DateField('Due Date (optional)', validators=[Optional()])
     external_link = StringField('External Link (optional)', validators=[Optional(), validate_url])
+    estimated_minutes = SelectField(
+        'Estimated Time (optional)',
+        choices=[
+            ('', '— Unknown —'),
+            ('15', '15 min'),
+            ('30', '30 min'),
+            ('60', '1 hr'),
+            ('120', '2 hrs'),
+            ('180', '3 hrs'),
+        ],
+        coerce=lambda x: int(x) if x else None,
+        validators=[Optional()],
+    )
+    first_action = StringField(
+        'First Physical Action (optional)',
+        validators=[Optional(), Length(max=500)],
+    )
     submit = SubmitField('Save Task')
