@@ -82,7 +82,7 @@ class TestFocusComplete:
     def test_complete_renders_done_state(self, auth_client, task):
         resp = auth_client.post(f'/focus/{task.id}/complete')
         assert b'Done' in resp.data
-        assert b'Great work' in resp.data
+        assert b'completion-message' in resp.data  # JS populates message text at runtime
 
     def test_complete_shows_back_to_dashboard_link(self, auth_client, task):
         resp = auth_client.post(f'/focus/{task.id}/complete')
