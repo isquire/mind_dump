@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, DateField, SubmitField, TextAreaField
+from wtforms import StringField, SelectField, DateField, SubmitField, TextAreaField, HiddenField
 from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 
@@ -13,7 +13,7 @@ def validate_url(form, field):
 class TaskForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(1, 200)])
     # notes is populated by the Quill editor via a hidden field
-    notes = StringField('Notes')
+    notes = HiddenField('Notes')
     # Populated by radio buttons in the template (work/personal); falls back to 'work' in route
     category = StringField('Category')
     status = SelectField(
