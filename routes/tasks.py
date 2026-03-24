@@ -3,7 +3,7 @@ import bleach
 from datetime import datetime, timezone
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from models import db, Task, Project, MindDump
 from forms.task import TaskForm
@@ -169,3 +169,14 @@ def complete(task_id):
     db.session.commit()
     flash(f'"{task.title}" done! Great work.', 'success')
     return safe_referrer_redirect('dashboard.index')
+
+
+@tasks_bp.route('/completed')
+@login_required
+def completed():
+    view = current_user.view_preference or 'all'
+    q = Task.query.filter(Task.completed_at.isnot(None)).order_by(Task.completed_at.desc())
+    if view in ('work', 'personal'):
+        q = q.filter(Task.category == view)
+    tasks = q.all()
+    return render_template('tasks/completed.html', tasks=tasks)

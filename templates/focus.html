@@ -226,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
     micro: false,
     interval: null
   };
+  var statusUpdated = false;
 
   var ring       = document.getElementById('pomodoro-ring');
   var timeEl     = document.getElementById('pomodoro-time');
@@ -256,6 +257,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function startTimer() {
     if (timer.secondsLeft <= 0) return;
+    if (!statusUpdated && {{ (task.status == 'Not Started') | tojson }}) {
+      statusUpdated = true;
+      fetch('{{ url_for("focus.start", task_id=task.id) }}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+      });
+    }
     timer.running = true;
     setStartBtn('pause');
     timer.interval = setInterval(function () {

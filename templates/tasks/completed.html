@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Completed Tasks{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 fw-bold mb-0">
+    <i class="bi bi-check2-all"></i> Completed Tasks
+  </h1>
+  <span class="badge bg-secondary fs-6">{{ tasks | length }}</span>
+</div>
+
+{% if tasks %}
+  {# Group by date #}
+  {% set ns = namespace(current_date=None) %}
+  <div class="list-group shadow-sm">
+    {% for task in tasks %}
+      {% set task_date = task.completed_at.strftime('%Y-%m-%d') %}
+      {% if task_date != ns.current_date %}
+        {% set ns.current_date = task_date %}
+        {% if not loop.first %}</div><div class="list-group shadow-sm mt-3">{% endif %}
+        <div class="list-group-item list-group-item-secondary py-1 px-3">
+          <small class="fw-semibold text-muted text-uppercase">
+            {{ task.completed_at.strftime('%A, %d %b %Y') }}
+          </small>
+        </div>
+      {% endif %}
+
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="flex-grow-1">
+            <span class="text-muted text-decoration-line-through">{{ task.title }}</span>
+            <div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
+              <small class="text-muted">
+                <i class="bi bi-clock"></i> {{ task.completed_at.strftime('%H:%M') }}
+              </small>
+              {% if task.category == 'work' %}
+                <span class="badge bg-primary">
+                  <i class="bi bi-briefcase-fill"></i> Work
+                </span>
+              {% else %}
+                <span class="badge bg-success">
+                  <i class="bi bi-house-heart-fill"></i> Personal
+                </span>
+              {% endif %}
+              {% if task.project %}
+                <small class="text-muted">
+                  <i class="bi bi-kanban"></i>
+                  <a href="{{ url_for('projects.detail', project_id=task.project.id) }}"
+                     class="text-muted text-decoration-none">{{ task.project.title }}</a>
+                </small>
+              {% endif %}
+            </div>
+          </div>
+          <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+             class="btn btn-sm btn-outline-secondary flex-shrink-0" title="Edit">
+            <i class="bi bi-pencil"></i>
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-check2-circle display-4 d-block mb-3 opacity-25"></i>
+    <p class="mb-0">No completed tasks yet.</p>
+    <small>Tasks marked as Done will appear here.</small>
+  </div>
+{% endif %}
+{% endblock %}
