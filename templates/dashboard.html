@@ -270,43 +270,49 @@
 
   {# This week #}
   <div class="col-md-6">
-    <h2 class="h6 text-muted fw-semibold text-uppercase mb-2">
-      <i class="bi bi-calendar-range"></i> Coming up this week
-    </h2>
-    {% if tasks_week %}
-      <div class="list-group shadow-sm">
-        {% for task in tasks_week %}
-        <div class="list-group-item list-group-item-action">
-          <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1 me-2">
-              <span class="fw-semibold">{{ task.title }}</span>
-              <div class="mt-1">
-                <small class="text-muted me-2">
-                  {{ task.due_date.strftime('%a, %d %b') }}
-                </small>
-                <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
-                {% if task.external_link %}
-                  <span class="badge bg-info text-dark ms-1">Tracked externally</span>
-                {% endif %}
+    <button class="btn btn-link btn-sm p-0 h6 text-muted fw-semibold text-uppercase mb-2 text-decoration-none collapsed"
+            data-bs-toggle="collapse"
+            data-bs-target="#week-tasks-collapse"
+            aria-expanded="false">
+      <i class="bi bi-calendar-range me-1"></i> Coming up this week
+      <i class="bi bi-chevron-down ms-1 small"></i>
+    </button>
+    <div class="collapse" id="week-tasks-collapse">
+      {% if tasks_week %}
+        <div class="list-group shadow-sm">
+          {% for task in tasks_week %}
+          <div class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1 me-2">
+                <span class="fw-semibold">{{ task.title }}</span>
+                <div class="mt-1">
+                  <small class="text-muted me-2">
+                    {{ task.due_date.strftime('%a, %d %b') }}
+                  </small>
+                  <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
+                  {% if task.external_link %}
+                    <span class="badge bg-info text-dark ms-1">Tracked externally</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="d-flex gap-1 flex-shrink-0">
+                <a href="{{ url_for('focus.view', task_id=task.id) }}"
+                   class="btn btn-sm btn-outline-primary" title="Focus mode">
+                  <i class="bi bi-fullscreen"></i>
+                </a>
+                <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+                   class="btn btn-sm btn-outline-secondary" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
               </div>
             </div>
-            <div class="d-flex gap-1 flex-shrink-0">
-              <a href="{{ url_for('focus.view', task_id=task.id) }}"
-                 class="btn btn-sm btn-outline-primary" title="Focus mode">
-                <i class="bi bi-fullscreen"></i>
-              </a>
-              <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
-                 class="btn btn-sm btn-outline-secondary" title="Edit">
-                <i class="bi bi-pencil"></i>
-              </a>
-            </div>
           </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="text-muted small fst-italic">Nothing else due this week.</p>
-    {% endif %}
+      {% else %}
+        <p class="text-muted small fst-italic">Nothing else due this week.</p>
+      {% endif %}
+    </div>
   </div>
 
 </div>
