@@ -43,10 +43,10 @@
 {# ── Filter tabs ──────────────────────────────────────────────────────────── #}
 <ul class="nav nav-pills mb-3" id="dump-tabs" role="tablist">
   <li class="nav-item">
-    <a class="nav-link active" href="#" data-filter="all">All</a>
+    <a class="nav-link" href="#" data-filter="all">All</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link" href="#" data-filter="Unorganized">
+    <a class="nav-link active" href="#" data-filter="Unorganized">
       Unorganized
       {% set ucount = entries | selectattr('status', 'eq', 'Unorganized') | list | length %}
       {% if ucount > 0 %}
@@ -164,17 +164,26 @@
 {% block scripts %}
 <script>
 // Simple client-side filter for dump entries
+function applyDumpFilter(filter) {
+  document.querySelectorAll('.dump-item').forEach(function (item) {
+    item.style.display = (filter === 'all' || item.dataset.status === filter) ? '' : 'none';
+  });
+}
+
 document.querySelectorAll('[data-filter]').forEach(function (tab) {
   tab.addEventListener('click', function (e) {
     e.preventDefault();
     document.querySelectorAll('[data-filter]').forEach(t => t.classList.remove('active'));
     this.classList.add('active');
-    const filter = this.dataset.filter;
-    document.querySelectorAll('.dump-item').forEach(function (item) {
-      item.style.display = (filter === 'all' || item.dataset.status === filter) ? '' : 'none';
-    });
+    applyDumpFilter(this.dataset.filter);
   });
 });
+
+// Apply the default active filter on page load
+(function () {
+  var activeTab = document.querySelector('[data-filter].active');
+  if (activeTab) { applyDumpFilter(activeTab.dataset.filter); }
+})();
 
 // Category toggle on capture form
 (function () {
