@@ -171,6 +171,21 @@ def complete(task_id):
     return safe_referrer_redirect('dashboard.index')
 
 
+@tasks_bp.route('/reorder', methods=['POST'])
+@login_required
+def reorder():
+    data = request.get_json(silent=True) or {}
+    task_ids = data.get('task_ids', [])
+    if not isinstance(task_ids, list):
+        return {'ok': False, 'error': 'invalid'}, 400
+    for pos, tid in enumerate(task_ids):
+        task = db.session.get(Task, tid)
+        if task:
+            task.position = pos
+    db.session.commit()
+    return {'ok': True}
+
+
 @tasks_bp.route('/completed')
 @login_required
 def completed():

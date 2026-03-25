@@ -159,3 +159,30 @@ class TestDeleteBigIdea:
         resp = auth_client.post(f'/big-ideas/{big_idea.id}/delete')
         assert resp.status_code == 302
         assert '/big-ideas/' in resp.location
+
+
+class TestReorderBigIdeas:
+    def test_reorder_updates_positions(self, auth_client, db):
+        idea_a = BigIdea(title='Idea A', accent_color='#111111')
+        idea_b = BigIdea(title='Idea B', accent_color='#222222')
+        idea_c = BigIdea(title='Idea C', accent_color='#333333')
+        db.session.add_all([idea_a, idea_b, idea_c])
+        db.session.commit()
+        resp = auth_client.post(
+            '/big-ideas/reorder',
+            json={'idea_ids': [idea_c.id, idea_a.id, idea_b.id]},
+            content_type='application/json',
+        )
+        assert resp.status_code == 200
+        db.session.expire_all()
+        assert db.session.get(BigIdea, idea_c.id).position == 0
+        assert db.session.get(BigIdea, idea_a.id).position == 1
+        assert db.session.get(BigIdea, idea_b.id).position == 2
+
+    def test_reorder_invalid_payload_returns_400(self, auth_client):
+        resp = auth_client.post(
+            '/big-ideas/reorder',
+            json={'idea_ids': 'not-a-list'},
+            content_type='application/json',
+        )
+        assert resp.status_code == 400

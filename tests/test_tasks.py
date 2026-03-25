@@ -266,3 +266,42 @@ class TestExternalLink:
         db.session.commit()
         resp = auth_client.get(f'/projects/{task.project_id}')
         assert b'Tracked externally' in resp.data
+
+
+class TestReorderTasks:
+    def test_reorder_updates_positions(self, auth_client, db, project):
+        t1 = Task(project_id=project.id, title='Task 1')
+        t2 = Task(project_id=project.id, title='Task 2')
+        t3 = Task(project_id=project.id, title='Task 3')
+        db.session.add_all([t1, t2, t3])
+        db.session.commit()
+        resp = auth_client.post(
+            '/tasks/reorder',
+            json={'task_ids': [t3.id, t1.id, t2.id]},
+            content_type='application/json',
+        )
+        assert resp.status_code == 200
+        db.session.expire_all()
+        assert db.session.get(Task, t3.id).position == 0
+        assert db.session.get(Task, t1.id).position == 1
+        assert db.session.get(Task, t2.id).position == 2
+
+    def test_reorder_invalid_payload_returns_400(self, auth_client):
+        resp = auth_client.post(
+            '/tasks/reorder',
+            json={'task_ids': 'not-a-list'},
+            content_type='application/json',
+        )
+        assert resp.status_code == 400
+
+    def test_project_detail_uses_sorted_tasks(self, auth_client, db, project):
+        t1 = Task(project_id=project.id, title='First Task', position=1)
+        t2 = Task(project_id=project.id, title='Second Task', position=0)
+        db.session.add_all([t1, t2])
+        db.session.commit()
+        resp = auth_client.get(f'/projects/{project.id}')
+        assert resp.status_code == 200
+        # Second Task (position=0) should appear before First Task (position=1)
+        pos_first = resp.data.find(b'First Task')
+        pos_second = resp.data.find(b'Second Task')
+        assert pos_second < pos_first

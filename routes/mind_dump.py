@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
 
 from models import db, MindDump, Task, Project, BigIdea
-from forms.mind_dump import QuickCaptureForm
+from forms.mind_dump import QuickCaptureForm, EditMindDumpForm
 from utils import default_category
 
 mind_dump_bp = Blueprint('mind_dump', __name__, url_prefix='/mind-dump')
@@ -35,6 +35,24 @@ def capture():
         db.session.commit()
         flash('Captured!', 'success')
     return redirect(url_for('mind_dump.index'))
+
+
+@mind_dump_bp.route('/<int:entry_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit(entry_id):
+    entry = db.get_or_404(MindDump, entry_id)
+    form = EditMindDumpForm(obj=entry)
+    if request.method == 'GET':
+        form.category.data = entry.category
+    if form.validate_on_submit():
+        entry.content = form.content.data.strip()
+        cat = form.category.data
+        if cat in ('work', 'personal'):
+            entry.category = cat
+        db.session.commit()
+        flash('Entry updated.', 'success')
+        return redirect(url_for('mind_dump.index'))
+    return render_template('mind_dump/edit.html', form=form, entry=entry)
 
 
 @mind_dump_bp.route('/<int:entry_id>/someday', methods=['POST'])

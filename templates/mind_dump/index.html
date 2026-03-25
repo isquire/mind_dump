@@ -107,6 +107,10 @@
         {# Actions #}
         {% if entry.status != 'Assigned' %}
         <div class="d-flex flex-wrap gap-1 flex-shrink-0">
+          <a href="{{ url_for('mind_dump.edit', entry_id=entry.id) }}"
+             class="btn btn-sm btn-outline-secondary" title="Edit">
+            <i class="bi bi-pencil"></i>
+          </a>
           <a href="{{ url_for('mind_dump.promote_task', entry_id=entry.id) }}"
              class="btn btn-sm btn-outline-primary" title="Promote to Task">
             <i class="bi bi-check2-square"></i><span class="d-none d-sm-inline"> Task</span>

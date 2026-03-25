@@ -43,6 +43,7 @@ class BigIdea(db.Model):
     description = db.Column(db.Text)
     accent_color = db.Column(db.String(7), default='#6366f1')  # CSS hex color
     category = db.Column(db.String(10), default='work', nullable=False)
+    position = db.Column(db.Integer)   # manual sort order; NULL = unpositioned (sort last)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     projects = db.relationship(
@@ -115,6 +116,7 @@ class Task(db.Model):
     external_link = db.Column(db.String(500))
     # Only one task may be pinned as "My One Thing" at a time
     is_pinned = db.Column(db.Boolean, default=False, nullable=False)
+    position = db.Column(db.Integer)   # manual sort order within a project; NULL = unpositioned
     category = db.Column(db.String(10), default='work', nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at = db.Column(db.DateTime)

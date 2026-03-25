@@ -1,6 +1,7 @@
 """Big Ideas: CRUD for top-level goal/theme containers."""
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from sqlalchemy import nullslast
 
 from models import db, BigIdea, Project, Task, MindDump
 from forms.big_idea import BigIdeaForm
@@ -12,11 +13,26 @@ big_ideas_bp = Blueprint('big_ideas', __name__, url_prefix='/big-ideas')
 @login_required
 def index():
     view = current_user.view_preference or 'all'
-    q = BigIdea.query.order_by(BigIdea.created_at.desc())
+    q = BigIdea.query.order_by(nullslast(BigIdea.position.asc()), BigIdea.created_at.desc())
     if view in ('work', 'personal'):
         q = q.filter(BigIdea.category == view)
     ideas = q.all()
     return render_template('big_ideas/index.html', ideas=ideas)
+
+
+@big_ideas_bp.route('/reorder', methods=['POST'])
+@login_required
+def reorder():
+    data = request.get_json(silent=True) or {}
+    idea_ids = data.get('idea_ids', [])
+    if not isinstance(idea_ids, list):
+        return {'ok': False, 'error': 'invalid'}, 400
+    for pos, iid in enumerate(idea_ids):
+        idea = db.session.get(BigIdea, iid)
+        if idea:
+            idea.position = pos
+    db.session.commit()
+    return {'ok': True}
 
 
 @big_ideas_bp.route('/new', methods=['GET', 'POST'])

@@ -189,6 +189,18 @@ def _migrate_nullable_project_id(engine) -> None:
         conn.commit()
 
 
+def _migrate_add_position_columns(engine) -> None:
+    """Add position column to tasks and big_ideas if missing (one-time migration)."""
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        for table in ('tasks', 'big_ideas'):
+            rows = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
+            col_names = [r[1] for r in rows]
+            if 'position' not in col_names:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN position INTEGER"))
+        conn.commit()
+
+
 def _migrate_add_adhd_fields(engine) -> None:
     """Add estimated_minutes and first_action to tasks if missing (one-time migration)."""
     with engine.connect() as conn:
@@ -212,6 +224,7 @@ def init_db(app: Flask) -> None:
         _migrate_nullable_project_id(db.engine)
         _migrate_add_category_columns(db.engine)
         _migrate_add_adhd_fields(db.engine)
+        _migrate_add_position_columns(db.engine)
 
         if User.query.count() == 0:
             print("\n=== First Run Setup ===")

@@ -134,3 +134,43 @@ class TestNavBadge:
         # The badge element only appears for unorganized_count > 0
         # Verify the badge class bg-warning is not shown for count 0
         assert resp.status_code == 200
+
+
+class TestEditMindDump:
+    def test_edit_get_returns_200(self, auth_client, mind_dump_entry):
+        resp = auth_client.get(f'/mind-dump/{mind_dump_entry.id}/edit')
+        assert resp.status_code == 200
+
+    def test_edit_shows_existing_content(self, auth_client, mind_dump_entry):
+        resp = auth_client.get(f'/mind-dump/{mind_dump_entry.id}/edit')
+        assert mind_dump_entry.content.encode() in resp.data
+
+    def test_edit_updates_content(self, auth_client, db, mind_dump_entry):
+        resp = auth_client.post(
+            f'/mind-dump/{mind_dump_entry.id}/edit',
+            data={'content': 'Updated thought', 'category': 'work'},
+        )
+        assert resp.status_code == 302
+        db.session.expire_all()
+        updated = db.session.get(MindDump, mind_dump_entry.id)
+        assert updated.content == 'Updated thought'
+
+    def test_edit_updates_category(self, auth_client, db, mind_dump_entry):
+        auth_client.post(
+            f'/mind-dump/{mind_dump_entry.id}/edit',
+            data={'content': mind_dump_entry.content, 'category': 'personal'},
+        )
+        db.session.expire_all()
+        updated = db.session.get(MindDump, mind_dump_entry.id)
+        assert updated.category == 'personal'
+
+    def test_edit_nonexistent_returns_404(self, auth_client):
+        resp = auth_client.get('/mind-dump/99999/edit')
+        assert resp.status_code == 404
+
+    def test_edit_redirects_to_index_on_success(self, auth_client, mind_dump_entry):
+        resp = auth_client.post(
+            f'/mind-dump/{mind_dump_entry.id}/edit',
+            data={'content': 'New content', 'category': 'work'},
+        )
+        assert '/mind-dump/' in resp.location

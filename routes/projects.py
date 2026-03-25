@@ -30,7 +30,11 @@ def index():
 @login_required
 def detail(project_id):
     project = db.get_or_404(Project, project_id)
-    return render_template('projects/detail.html', project=project)
+    tasks = sorted(
+        project.tasks,
+        key=lambda t: (t.position is None, t.position or 0, t.created_at),
+    )
+    return render_template('projects/detail.html', project=project, tasks=tasks)
 
 
 @projects_bp.route('/new', methods=['GET', 'POST'])
