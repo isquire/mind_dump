@@ -1,6 +1,6 @@
 """Projects: CRUD for projects belonging to a Big Idea."""
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from models import db, Project, BigIdea, MindDump
 from forms.project import ProjectForm
@@ -18,7 +18,11 @@ def _populate_big_idea_choices(form):
 @projects_bp.route('/')
 @login_required
 def index():
-    projects = Project.query.order_by(Project.created_at.desc()).all()
+    view = current_user.view_preference or 'all'
+    q = Project.query.order_by(Project.created_at.desc())
+    if view in ('work', 'personal'):
+        q = q.filter(Project.category == view)
+    projects = q.all()
     return render_template('projects/index.html', projects=projects)
 
 
@@ -26,7 +30,11 @@ def index():
 @login_required
 def detail(project_id):
     project = db.get_or_404(Project, project_id)
-    return render_template('projects/detail.html', project=project)
+    tasks = sorted(
+        project.tasks,
+        key=lambda t: (t.position is None, t.position or 0, t.created_at),
+    )
+    return render_template('projects/detail.html', project=project, tasks=tasks)
 
 
 @projects_bp.route('/new', methods=['GET', 'POST'])
@@ -44,19 +52,24 @@ def new():
     preselect_idea = request.args.get('big_idea_id', type=int)
     if request.method == 'GET':
         prefill = request.args.get('prefill', '')
+        prefill_category = request.args.get('prefill_category', '')
         if prefill:
             form.title.data = prefill[:200]
         if preselect_idea:
             form.big_idea_id.data = preselect_idea
+        if prefill_category in ('work', 'personal'):
+            form.category.data = prefill_category
 
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
+        cat = form.category.data if form.category.data in ('work', 'personal') else 'work'
         project = Project(
             big_idea_id=form.big_idea_id.data,
             title=form.title.data.strip(),
             description=(form.description.data or '').strip(),
             due_date=form.due_date.data or None,
             external_link=link or None,
+            category=cat,
         )
         db.session.add(project)
         db.session.flush()
@@ -69,6 +82,8 @@ def new():
 
         db.session.commit()
         flash(f'Project "{project.title}" created!', 'success')
+        if from_dump_id:
+            return redirect(url_for('mind_dump.index'))
         return redirect(url_for('projects.detail', project_id=project.id))
 
     return render_template('projects/form.html', form=form, project=None)
@@ -81,6 +96,9 @@ def edit(project_id):
     form = ProjectForm(obj=project)
     _populate_big_idea_choices(form)
 
+    if request.method == 'GET':
+        form.category.data = project.category
+
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
         project.big_idea_id = form.big_idea_id.data
@@ -88,6 +106,8 @@ def edit(project_id):
         project.description = (form.description.data or '').strip()
         project.due_date = form.due_date.data or None
         project.external_link = link or None
+        if form.category.data in ('work', 'personal'):
+            project.category = form.category.data
         db.session.commit()
         flash(f'Project "{project.title}" updated.', 'success')
         return redirect(url_for('projects.detail', project_id=project.id))

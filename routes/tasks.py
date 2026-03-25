@@ -3,10 +3,11 @@ import bleach
 from datetime import datetime, timezone
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from models import db, Task, Project, MindDump
 from forms.task import TaskForm
+from utils import safe_referrer_redirect
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 
@@ -24,9 +25,9 @@ def _sanitize_notes(html: str) -> str:
 
 
 def _populate_project_choices(form):
-    """Fill the project_id select."""
+    """Fill the project_id select with a blank 'no project' option first."""
     projects = Project.query.order_by(Project.title).all()
-    form.project_id.choices = [(p.id, p.title) for p in projects]
+    form.project_id.choices = [('', '— No project (Quick Task) —')] + [(p.id, p.title) for p in projects]
     return projects
 
 
@@ -36,21 +37,21 @@ def new():
     form = TaskForm()
     projects = _populate_project_choices(form)
 
-    if not projects:
-        flash('Create a Project first before adding a task.', 'warning')
-        return redirect(url_for('projects.new'))
-
     from_dump_id = request.args.get('from_dump', type=int)
     preselect_project = request.args.get('project_id', type=int)
     if request.method == 'GET':
         prefill = request.args.get('prefill', '')
+        prefill_category = request.args.get('prefill_category', '')
         if prefill:
             form.title.data = prefill[:200]
         if preselect_project:
             form.project_id.data = preselect_project
+        if prefill_category in ('work', 'personal'):
+            form.category.data = prefill_category
 
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
+        cat = form.category.data if form.category.data in ('work', 'personal') else 'work'
         task = Task(
             project_id=form.project_id.data,
             title=form.title.data.strip(),
@@ -58,6 +59,9 @@ def new():
             status=form.status.data or 'Not Started',
             due_date=form.due_date.data or None,
             external_link=link or None,
+            category=cat,
+            estimated_minutes=form.estimated_minutes.data,
+            first_action=(form.first_action.data or '').strip() or None,
         )
         db.session.add(task)
         db.session.flush()
@@ -70,7 +74,11 @@ def new():
 
         db.session.commit()
         flash(f'Task "{task.title}" created!', 'success')
-        return redirect(url_for('projects.detail', project_id=task.project_id))
+        if from_dump_id:
+            return redirect(url_for('mind_dump.index'))
+        if task.project_id:
+            return redirect(url_for('projects.detail', project_id=task.project_id))
+        return redirect(url_for('dashboard.index'))
 
     return render_template('tasks/form.html', form=form, task=None)
 
@@ -81,6 +89,10 @@ def edit(task_id):
     task = db.get_or_404(Task, task_id)
     form = TaskForm(obj=task)
     _populate_project_choices(form)
+    if request.method == 'GET':
+        form.project_id.data = task.project_id if task.project_id else ''
+        form.category.data = task.category
+        form.estimated_minutes.data = str(task.estimated_minutes) if task.estimated_minutes else ''
 
     if form.validate_on_submit():
         link = (form.external_link.data or '').strip()
@@ -90,6 +102,10 @@ def edit(task_id):
         task.status = form.status.data or 'Not Started'
         task.due_date = form.due_date.data or None
         task.external_link = link or None
+        task.estimated_minutes = form.estimated_minutes.data
+        task.first_action = (form.first_action.data or '').strip() or None
+        if form.category.data in ('work', 'personal'):
+            task.category = form.category.data
         # Mark completed_at when status changes to Done
         if task.status == 'Done' and not task.completed_at:
             task.completed_at = datetime.now(timezone.utc)
@@ -97,7 +113,9 @@ def edit(task_id):
             task.completed_at = None
         db.session.commit()
         flash(f'Task "{task.title}" updated.', 'success')
-        return redirect(url_for('projects.detail', project_id=task.project_id))
+        if task.project_id:
+            return redirect(url_for('projects.detail', project_id=task.project_id))
+        return redirect(url_for('dashboard.index'))
 
     return render_template('tasks/form.html', form=form, task=task)
 
@@ -111,7 +129,9 @@ def delete(task_id):
     db.session.delete(task)
     db.session.commit()
     flash(f'Task "{title}" deleted.', 'success')
-    return redirect(url_for('projects.detail', project_id=project_id))
+    if project_id:
+        return redirect(url_for('projects.detail', project_id=project_id))
+    return redirect(url_for('dashboard.index'))
 
 
 @tasks_bp.route('/<int:task_id>/pin', methods=['POST'])
@@ -126,7 +146,7 @@ def pin(task_id):
     task.is_pinned = True
     db.session.commit()
     flash(f'"{task.title}" is your One Thing.', 'success')
-    return redirect(request.referrer or url_for('dashboard.index'))
+    return safe_referrer_redirect('dashboard.index')
 
 
 @tasks_bp.route('/<int:task_id>/unpin', methods=['POST'])
@@ -136,7 +156,7 @@ def unpin(task_id):
     task.is_pinned = False
     db.session.commit()
     flash('One Thing cleared.', 'info')
-    return redirect(request.referrer or url_for('dashboard.index'))
+    return safe_referrer_redirect('dashboard.index')
 
 
 @tasks_bp.route('/<int:task_id>/complete', methods=['POST'])
@@ -148,4 +168,30 @@ def complete(task_id):
     task.is_pinned = False
     db.session.commit()
     flash(f'"{task.title}" done! Great work.', 'success')
-    return redirect(request.referrer or url_for('dashboard.index'))
+    return safe_referrer_redirect('dashboard.index')
+
+
+@tasks_bp.route('/reorder', methods=['POST'])
+@login_required
+def reorder():
+    data = request.get_json(silent=True) or {}
+    task_ids = data.get('task_ids', [])
+    if not isinstance(task_ids, list):
+        return {'ok': False, 'error': 'invalid'}, 400
+    for pos, tid in enumerate(task_ids):
+        task = db.session.get(Task, tid)
+        if task:
+            task.position = pos
+    db.session.commit()
+    return {'ok': True}
+
+
+@tasks_bp.route('/completed')
+@login_required
+def completed():
+    view = current_user.view_preference or 'all'
+    q = Task.query.filter(Task.completed_at.isnot(None)).order_by(Task.completed_at.desc())
+    if view in ('work', 'personal'):
+        q = q.filter(Task.category == view)
+    tasks = q.all()
+    return render_template('tasks/completed.html', tasks=tasks)

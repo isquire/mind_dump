@@ -29,6 +29,11 @@
           <p class="text-muted mb-2">{{ project.description }}</p>
         {% endif %}
         <div class="d-flex flex-wrap gap-2">
+          <span class="badge rounded-pill {% if project.category == 'work' %}bg-primary{% else %}bg-success{% endif %}"
+                style="font-size:.7rem;">
+            <i class="bi {% if project.category == 'work' %}bi-briefcase-fill{% else %}bi-house-heart-fill{% endif %}"></i>
+            {{ project.category | capitalize }}
+          </span>
           {% if project.due_date %}
             <span class="badge {% if project.is_overdue %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">
               <i class="bi bi-calendar"></i>
@@ -96,11 +101,16 @@
 </div>
 
 {% if project.tasks %}
-  <div class="list-group shadow-sm">
-    {% for task in project.tasks | sort(attribute='created_at') %}
+  <div class="list-group shadow-sm" id="task-list">
+    {% for task in tasks %}
     <div class="list-group-item {% if task.status == 'Done' %}opacity-60{% endif %}
-                {% if task.is_overdue %}overdue-item{% endif %}">
+                {% if task.is_overdue %}overdue-item{% endif %}"
+         data-task-id="{{ task.id }}">
       <div class="d-flex justify-content-between align-items-start gap-2">
+
+        <span class="drag-handle text-muted mt-1 flex-shrink-0" style="cursor:grab;" title="Drag to reorder">
+          <i class="bi bi-grip-vertical"></i>
+        </span>
 
         <div class="flex-grow-1">
           <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -111,6 +121,13 @@
               {{ task.title }}
             </span>
             <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
+            {% if task.category != project.category %}
+              <span class="badge rounded-pill {% if task.category == 'work' %}bg-primary{% else %}bg-success{% endif %} opacity-75"
+                    title="This task is categorised as {{ task.category }}, unlike the project"
+                    style="font-size:.65rem;">
+                <i class="bi {% if task.category == 'work' %}bi-briefcase-fill{% else %}bi-house-heart-fill{% endif %}"></i>
+              </span>
+            {% endif %}
             {% if task.external_link %}
               <span class="badge bg-info text-dark">Tracked externally</span>
             {% endif %}
@@ -190,4 +207,29 @@
   </div>
 {% endif %}
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var list = document.getElementById('task-list');
+  if (!list) return;
+  new Sortable(list, {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd: function () {
+      var ids = Array.from(list.querySelectorAll('[data-task-id]'))
+                     .map(function (el) { return parseInt(el.dataset.taskId, 10); });
+      fetch('{{ url_for("tasks.reorder") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ task_ids: ids })
+      });
+    }
+  });
+}());
+</script>
 {% endblock %}

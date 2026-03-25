@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    # Persisted Work / All / Personal toggle preference
+    view_preference = db.Column(db.String(10), default='all', nullable=False)
 
     def set_password(self, password: str) -> None:
         """Hash and store password using bcrypt."""
@@ -40,6 +42,8 @@ class BigIdea(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     accent_color = db.Column(db.String(7), default='#6366f1')  # CSS hex color
+    category = db.Column(db.String(10), default='work', nullable=False)
+    position = db.Column(db.Integer)   # manual sort order; NULL = unpositioned (sort last)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     projects = db.relationship(
@@ -69,6 +73,7 @@ class Project(db.Model):
     due_date = db.Column(db.Date)
     # Validated to start with http:// or https:// before saving
     external_link = db.Column(db.String(500))
+    category = db.Column(db.String(10), default='work', nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     tasks = db.relationship(
@@ -102,7 +107,7 @@ class Task(db.Model):
     STATUS_CHOICES = ['Not Started', 'In Progress', 'Done', 'Blocked']
 
     id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=True)
     title = db.Column(db.String(200), nullable=False)
     notes = db.Column(db.Text)           # Rich text HTML from Quill
     status = db.Column(db.String(20), default='Not Started')
@@ -111,8 +116,12 @@ class Task(db.Model):
     external_link = db.Column(db.String(500))
     # Only one task may be pinned as "My One Thing" at a time
     is_pinned = db.Column(db.Boolean, default=False, nullable=False)
+    position = db.Column(db.Integer)   # manual sort order within a project; NULL = unpositioned
+    category = db.Column(db.String(10), default='work', nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at = db.Column(db.DateTime)
+    estimated_minutes = db.Column(db.Integer)       # nullable, task duration estimate
+    first_action = db.Column(db.String(500))         # nullable, first physical step to start
 
     mind_dump_entries = db.relationship(
         'MindDump',
@@ -120,6 +129,10 @@ class Task(db.Model):
         backref='linked_task',
         lazy=True
     )
+
+    @property
+    def is_quick_task(self) -> bool:
+        return self.project_id is None
 
     @property
     def is_overdue(self) -> bool:
@@ -149,6 +162,7 @@ class MindDump(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default='Unorganized')
+    category = db.Column(db.String(10), default='work', nullable=False)
     linked_task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=True)
     linked_project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=True)
     linked_big_idea_id = db.Column(db.Integer, db.ForeignKey('big_ideas.id'), nullable=True)

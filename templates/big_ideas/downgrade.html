@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Downgrade "{{ idea.title }}"{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('big_ideas.index') }}">Big Ideas</a></li>
+        <li class="breadcrumb-item active">Downgrade</li>
+      </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pt-4 pb-0">
+        <h1 class="h4 fw-bold mb-0">
+          {% if target == 'project' %}
+            <i class="bi bi-kanban text-primary"></i> Convert to Project
+          {% else %}
+            <i class="bi bi-check2-square text-success"></i> Convert to Task
+          {% endif %}
+        </h1>
+      </div>
+      <div class="card-body p-4">
+
+        {# Source Big Idea summary #}
+        <div class="alert alert-light border mb-4">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-stars text-warning"></i>
+            <strong>{{ idea.title }}</strong>
+            <span class="badge {% if idea.category == 'work' %}bg-primary{% else %}bg-success{% endif %} ms-1">
+              {{ idea.category | capitalize }}
+            </span>
+          </div>
+          {% if idea.description %}
+            <small class="text-muted">{{ idea.description }}</small>
+          {% endif %}
+        </div>
+
+        {# What will be created #}
+        <div class="mb-4">
+          <h6 class="fw-semibold text-muted text-uppercase small mb-2">What will happen</h6>
+          {% if target == 'project' %}
+          <ul class="mb-0 small">
+            <li>A new <strong>Project</strong> named "{{ idea.title }}" will be created.</li>
+            <li>The description will carry over.</li>
+            {% if sub_project_count > 0 %}
+              {% if other_ideas %}
+              <li>The {{ sub_project_count }} existing sub-project{{ 's' if sub_project_count != 1 }} will be moved to the Big Idea you select below.</li>
+              {% else %}
+              <li class="text-danger">The {{ sub_project_count }} existing sub-project{{ 's' if sub_project_count != 1 }} and their tasks will be <strong>permanently deleted</strong> (no other Big Idea to move them to).</li>
+              {% endif %}
+            {% endif %}
+            <li>This Big Idea will be removed.</li>
+          </ul>
+          {% else %}
+          <ul class="mb-0 small">
+            <li>A new standalone <strong>Task</strong> named "{{ idea.title }}" will be created.</li>
+            {% if idea.description %}
+              <li>The description will become the task's "First Physical Action" hint.</li>
+            {% endif %}
+            {% if sub_project_count > 0 %}
+              {% if other_ideas %}
+              <li>The {{ sub_project_count }} existing sub-project{{ 's' if sub_project_count != 1 }} will be moved to the Big Idea you select below.</li>
+              {% else %}
+              <li class="text-danger">The {{ sub_project_count }} existing sub-project{{ 's' if sub_project_count != 1 }} and their tasks will be <strong>permanently deleted</strong> (no other Big Idea to move them to).</li>
+              {% endif %}
+            {% endif %}
+            <li>This Big Idea will be removed.</li>
+          </ul>
+          {% endif %}
+        </div>
+
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="to" value="{{ target }}">
+
+          {# Sub-project reassignment — only shown when there are sub-projects and a target is available #}
+          {% if sub_project_count > 0 and other_ideas %}
+          <div class="mb-4">
+            <label for="reassign_to_id" class="form-label fw-semibold">
+              Move {{ sub_project_count }} sub-project{{ 's' if sub_project_count != 1 }} to
+            </label>
+            <select name="reassign_to_id" id="reassign_to_id" class="form-select">
+              {% for other in other_ideas %}
+              <option value="{{ other.id }}">{{ other.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          {# For project conversion: when sub-projects exist and they're being reassigned,
+             the new project also goes under the same Big Idea.
+             When no sub-projects, show a parent selector for the new project. #}
+          {% if target == 'project' and sub_project_count == 0 %}
+          <div class="mb-4">
+            <label for="reassign_to_id" class="form-label fw-semibold">
+              Place new project under
+            </label>
+            <select name="reassign_to_id" id="reassign_to_id" class="form-select">
+              {% for other in other_ideas %}
+              <option value="{{ other.id }}">{{ other.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-warning fw-semibold">
+              <i class="bi bi-arrow-down-circle-fill"></i>
+              {% if target == 'project' %}Convert to Project{% else %}Convert to Task{% endif %}
+              {% if sub_project_count > 0 and not other_ideas %} &amp; Delete Sub-projects{% endif %}
+            </button>
+            <a href="{{ url_for('big_ideas.index') }}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

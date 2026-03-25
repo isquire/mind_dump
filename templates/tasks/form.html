@@ -37,12 +37,31 @@
 
           {# Project #}
           <div class="mb-3">
-            <label for="project_id" class="form-label fw-semibold">Project <span class="text-danger">*</span></label>
+            <label for="project_id" class="form-label fw-semibold">
+              Project <span class="text-muted fw-normal">(optional)</span>
+            </label>
             {{ form.project_id(class="form-select" + (" is-invalid" if form.project_id.errors else ""),
                               id="project_id") }}
             {% for error in form.project_id.errors %}
               <div class="invalid-feedback">{{ error }}</div>
             {% endfor %}
+          </div>
+
+          {# Category #}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Category</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="category" id="cat-work" value="work"
+                     {% if form.category.data != 'personal' %}checked{% endif %} autocomplete="off">
+              <label class="btn btn-outline-primary" for="cat-work">
+                <i class="bi bi-briefcase-fill"></i> Work
+              </label>
+              <input type="radio" class="btn-check" name="category" id="cat-personal" value="personal"
+                     {% if form.category.data == 'personal' %}checked{% endif %} autocomplete="off">
+              <label class="btn btn-outline-success" for="cat-personal">
+                <i class="bi bi-house-heart-fill"></i> Personal
+              </label>
+            </div>
           </div>
 
           <div class="row g-3 mb-3">
@@ -60,6 +79,34 @@
               </label>
               {{ form.due_date(class="form-control", id="due_date", type="date") }}
             </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            {# Estimated time #}
+            <div class="col-sm-6">
+              <label for="estimated_minutes" class="form-label fw-semibold">
+                Estimated Time <span class="text-muted fw-normal">(optional)</span>
+              </label>
+              {{ form.estimated_minutes(class="form-select", id="estimated_minutes") }}
+            </div>
+            {# Spacer to keep layout consistent #}
+            <div class="col-sm-6"></div>
+          </div>
+
+          {# First physical action #}
+          <div class="mb-3">
+            <label for="first_action" class="form-label fw-semibold">
+              First Physical Action <span class="text-muted fw-normal">(optional)</span>
+            </label>
+            {{ form.first_action(class="form-control" + (" is-invalid" if form.first_action.errors else ""),
+                                 id="first_action",
+                                 placeholder="e.g. Open laptop and pull up the doc") }}
+            {% for error in form.first_action.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+            <small class="text-muted">
+              The very first concrete step. Shown in Focus Mode to help you start.
+            </small>
           </div>
 
           {# External link #}
@@ -91,9 +138,11 @@
             <button type="submit" class="btn btn-primary">
               <i class="bi bi-check-lg"></i> {{ 'Save Changes' if task else 'Create Task' }}
             </button>
-            {% if task %}
+            {% if task and task.project_id %}
               <a href="{{ url_for('projects.detail', project_id=task.project_id) }}"
                  class="btn btn-outline-secondary">Cancel</a>
+            {% elif task %}
+              <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">Cancel</a>
             {% else %}
               <a href="{{ url_for('projects.index') }}" class="btn btn-outline-secondary">Cancel</a>
             {% endif %}

@@ -40,6 +40,23 @@
                                placeholder="What does this big idea mean to you?") }}
           </div>
 
+          {# Category #}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Category</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="category" id="cat-work" value="work"
+                     {% if form.category.data != 'personal' %}checked{% endif %} autocomplete="off">
+              <label class="btn btn-outline-primary" for="cat-work">
+                <i class="bi bi-briefcase-fill"></i> Work
+              </label>
+              <input type="radio" class="btn-check" name="category" id="cat-personal" value="personal"
+                     {% if form.category.data == 'personal' %}checked{% endif %} autocomplete="off">
+              <label class="btn btn-outline-success" for="cat-personal">
+                <i class="bi bi-house-heart-fill"></i> Personal
+              </label>
+            </div>
+          </div>
+
           <div class="mb-4">
             <label for="accent_color" class="form-label fw-semibold">Accent Color</label>
             <div class="d-flex align-items-center gap-3">

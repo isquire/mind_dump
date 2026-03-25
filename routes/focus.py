@@ -1,7 +1,7 @@
 """Focus Mode: distraction-free single-task view."""
 from datetime import datetime, timezone, date, timedelta
 
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, redirect, url_for, flash, jsonify
 from flask_login import login_required
 
 from models import db, Task
@@ -14,6 +14,16 @@ focus_bp = Blueprint('focus', __name__)
 def view(task_id):
     task = db.get_or_404(Task, task_id)
     return render_template('focus.html', task=task)
+
+
+@focus_bp.route('/focus/<int:task_id>/start', methods=['POST'])
+@login_required
+def start(task_id):
+    task = db.get_or_404(Task, task_id)
+    if task.status == 'Not Started':
+        task.status = 'In Progress'
+        db.session.commit()
+    return jsonify(ok=True)
 
 
 @focus_bp.route('/focus/<int:task_id>/complete', methods=['POST'])

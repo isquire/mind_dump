@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Edit Entry{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('mind_dump.index') }}">Mind Dump</a></li>
+        <li class="breadcrumb-item active">Edit</li>
+      </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pt-4 pb-0">
+        <h1 class="h4 fw-bold mb-0">
+          <i class="bi bi-pencil text-warning"></i> Edit Entry
+        </h1>
+      </div>
+      <div class="card-body p-4">
+
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+          {{ form.category(id="edit-category-input") }}
+
+          <div class="mb-3">
+            <label for="content" class="form-label fw-semibold">
+              Content <span class="text-danger">*</span>
+            </label>
+            {{ form.content(
+                class="form-control" + (" is-invalid" if form.content.errors else ""),
+                id="content",
+                autofocus=true,
+                placeholder="What's on your mind?"
+            ) }}
+            {% for error in form.content.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Category</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="_cat_radio" id="cat-work" value="work"
+                     {% if form.category.data != 'personal' %}checked{% endif %} autocomplete="off">
+              <label class="btn btn-outline-primary" for="cat-work">
+                <i class="bi bi-briefcase-fill"></i> Work
+              </label>
+              <input type="radio" class="btn-check" name="_cat_radio" id="cat-personal" value="personal"
+                     {% if form.category.data == 'personal' %}checked{% endif %} autocomplete="off">
+              <label class="btn btn-outline-success" for="cat-personal">
+                <i class="bi bi-house-heart-fill"></i> Personal
+              </label>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('mind_dump.index') }}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Keep the hidden category field in sync with the radio buttons
+(function () {
+  var input = document.getElementById('edit-category-input');
+  document.querySelectorAll('[name="_cat_radio"]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      input.value = this.value;
+    });
+  });
+}());
+</script>
+{% endblock %}

@@ -61,10 +61,9 @@ class TestCreateTask:
         assert resp.status_code == 200
         assert Task.query.count() == before
 
-    def test_create_redirects_to_projects_when_no_projects(self, auth_client, db):
+    def test_create_accessible_when_no_projects(self, auth_client, db):
         resp = auth_client.get('/tasks/new')
-        assert resp.status_code == 302
-        assert '/projects/new' in resp.location
+        assert resp.status_code == 200
 
     def test_create_from_mind_dump_marks_assigned(self, auth_client, db, project, mind_dump_entry):
         resp = auth_client.post(
@@ -138,6 +137,24 @@ class TestEditTask:
     def test_edit_nonexistent_returns_404(self, auth_client):
         resp = auth_client.get('/tasks/99999/edit')
         assert resp.status_code == 404
+
+    def test_edit_form_notes_field_is_hidden(self, auth_client, db, task):
+        """notes input must be type=hidden so raw HTML isn't shown to the user."""
+        task.notes = '<p>Some <strong>rich</strong> text</p>'
+        db.session.commit()
+        resp = auth_client.get(f'/tasks/{task.id}/edit')
+        assert b'type="hidden"' in resp.data
+        # The raw HTML should not appear inside a visible text input value
+        assert b'<input type="text"' not in resp.data or \
+               b'<p>Some <strong>rich</strong> text</p>' not in resp.data
+
+    def test_new_form_notes_field_is_hidden(self, auth_client):
+        """notes input on the create form must also be type=hidden."""
+        resp = auth_client.get('/tasks/new')
+        html = resp.data.decode()
+        # Find the notes input — it must not be a visible text field
+        assert 'id="notes-hidden"' in html
+        assert 'id="notes-hidden" name="notes" type="text"' not in html
 
 
 class TestDeleteTask:
@@ -249,3 +266,42 @@ class TestExternalLink:
         db.session.commit()
         resp = auth_client.get(f'/projects/{task.project_id}')
         assert b'Tracked externally' in resp.data
+
+
+class TestReorderTasks:
+    def test_reorder_updates_positions(self, auth_client, db, project):
+        t1 = Task(project_id=project.id, title='Task 1')
+        t2 = Task(project_id=project.id, title='Task 2')
+        t3 = Task(project_id=project.id, title='Task 3')
+        db.session.add_all([t1, t2, t3])
+        db.session.commit()
+        resp = auth_client.post(
+            '/tasks/reorder',
+            json={'task_ids': [t3.id, t1.id, t2.id]},
+            content_type='application/json',
+        )
+        assert resp.status_code == 200
+        db.session.expire_all()
+        assert db.session.get(Task, t3.id).position == 0
+        assert db.session.get(Task, t1.id).position == 1
+        assert db.session.get(Task, t2.id).position == 2
+
+    def test_reorder_invalid_payload_returns_400(self, auth_client):
+        resp = auth_client.post(
+            '/tasks/reorder',
+            json={'task_ids': 'not-a-list'},
+            content_type='application/json',
+        )
+        assert resp.status_code == 400
+
+    def test_project_detail_uses_sorted_tasks(self, auth_client, db, project):
+        t1 = Task(project_id=project.id, title='First Task', position=1)
+        t2 = Task(project_id=project.id, title='Second Task', position=0)
+        db.session.add_all([t1, t2])
+        db.session.commit()
+        resp = auth_client.get(f'/projects/{project.id}')
+        assert resp.status_code == 200
+        # Second Task (position=0) should appear before First Task (position=1)
+        pos_first = resp.data.find(b'First Task')
+        pos_second = resp.data.find(b'Second Task')
+        assert pos_second < pos_first

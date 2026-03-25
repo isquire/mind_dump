@@ -9,6 +9,7 @@
     <form method="POST" action="{{ url_for('dashboard.quick_capture') }}"
           id="quick-capture-form" novalidate>
       {{ form.hidden_tag() }}
+      {{ form.category(id="capture-category") }}
       <div class="input-group input-group-lg">
         {{ form.content(
             class="form-control border-0 bg-light",
@@ -21,13 +22,41 @@
           <i class="bi bi-lightning-fill"></i><span class="d-none d-sm-inline"> Capture</span>
         </button>
       </div>
+      <div class="d-flex gap-2 mt-2">
+        <button type="button" id="capture-cat-work"
+                class="btn btn-sm {% if current_view == 'work' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                onclick="setCaptureCategory('work')">
+          <i class="bi bi-briefcase-fill"></i> Work
+        </button>
+        <button type="button" id="capture-cat-personal"
+                class="btn btn-sm {% if current_view == 'personal' %}btn-success{% else %}btn-outline-success{% endif %}"
+                onclick="setCaptureCategory('personal')">
+          <i class="bi bi-house-heart-fill"></i> Personal
+        </button>
+      </div>
     </form>
+    <script>
+    (function () {
+      var catField = document.getElementById('capture-category');
+      {% if current_view in ('work', 'personal') %}
+      catField.value = '{{ current_view }}';
+      {% endif %}
+
+      window.setCaptureCategory = function (cat) {
+        catField.value = cat;
+        document.getElementById('capture-cat-work').className =
+          'btn btn-sm ' + (cat === 'work' ? 'btn-primary' : 'btn-outline-primary');
+        document.getElementById('capture-cat-personal').className =
+          'btn btn-sm ' + (cat === 'personal' ? 'btn-success' : 'btn-outline-success');
+      };
+    }());
+    </script>
   </div>
 </div>
 
 {# ── Weekly progress ──────────────────────────────────────────────────────── #}
 {% if week_total > 0 %}
-<div class="mb-4">
+<div class="mb-3">
   <div class="d-flex justify-content-between align-items-center mb-1">
     <small class="text-muted fw-semibold">
       <i class="bi bi-calendar-week"></i> This week — {{ week_done }} of {{ week_total }} tasks done
@@ -38,6 +67,28 @@
        aria-valuenow="{{ weekly_pct }}" aria-valuemin="0" aria-valuemax="100">
     <div class="progress-bar bg-success" style="width: {{ weekly_pct }}%"></div>
   </div>
+</div>
+{% endif %}
+
+{# ── Streak & Today Stats ──────────────────────────────────────────────────── #}
+{% if streak > 0 or today_done_count > 0 or today_estimated_minutes > 0 %}
+<div class="d-flex flex-wrap gap-2 mb-4">
+  {% if streak > 0 %}
+  <span class="badge streak-badge fs-6 px-3 py-2">
+    🔥 {{ streak }}-day streak
+  </span>
+  {% endif %}
+  {% if today_done_count > 0 %}
+  <span class="badge bg-success fs-6 px-3 py-2">
+    <i class="bi bi-check-circle-fill"></i> {{ today_done_count }} done today
+  </span>
+  {% endif %}
+  {% if today_estimated_minutes > 0 %}
+  <span class="badge bg-light text-dark border fs-6 px-3 py-2">
+    <i class="bi bi-clock"></i>
+    ~{% if today_estimated_minutes >= 60 %}{{ today_estimated_minutes // 60 }}h {% endif %}{% if today_estimated_minutes % 60 %}{{ today_estimated_minutes % 60 }}m{% endif %} planned today
+  </span>
+  {% endif %}
 </div>
 {% endif %}
 
@@ -118,10 +169,68 @@
             <i class="bi bi-arrow-right-circle"></i><span class="d-none d-sm-inline"> Tomorrow</span>
           </button>
         </form>
+        <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+           class="btn btn-sm btn-outline-secondary" title="Edit">
+          <i class="bi bi-pencil"></i>
+        </a>
         <a href="{{ url_for('focus.view', task_id=task.id) }}"
            class="btn btn-sm btn-outline-secondary" title="Focus mode">
           <i class="bi bi-fullscreen"></i>
         </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Quick Tasks ──────────────────────────────────────────────────────────── #}
+{% if tasks_quick %}
+<div class="mb-4">
+  <h2 class="h6 text-muted fw-semibold text-uppercase mb-2">
+    <i class="bi bi-lightning-charge"></i> Quick Tasks
+  </h2>
+  <div class="list-group shadow-sm">
+    {% for task in tasks_quick %}
+    <div class="list-group-item list-group-item-action">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1 me-2">
+          <span class="fw-semibold">{{ task.title }}</span>
+          <div class="mt-1">
+            <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
+          </div>
+        </div>
+        <div class="d-flex gap-1 flex-shrink-0">
+          <a href="{{ url_for('focus.view', task_id=task.id) }}"
+             class="btn btn-sm btn-outline-primary" title="Focus mode">
+            <i class="bi bi-fullscreen"></i>
+          </a>
+          <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+             class="btn btn-sm btn-outline-secondary" title="Edit">
+            <i class="bi bi-pencil"></i>
+          </a>
+          {% if task.is_pinned %}
+          <form method="POST" action="{{ url_for('tasks.unpin', task_id=task.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-warning" title="Unpin One Thing">
+              <i class="bi bi-pin-fill"></i>
+            </button>
+          </form>
+          {% else %}
+          <form method="POST" action="{{ url_for('tasks.pin', task_id=task.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Set as One Thing">
+              <i class="bi bi-pin-angle"></i>
+            </button>
+          </form>
+          {% endif %}
+          <form method="POST" action="{{ url_for('tasks.complete', task_id=task.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-success" title="Mark done">
+              <i class="bi bi-check-lg"></i>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
     {% endfor %}
@@ -144,8 +253,18 @@
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1 me-2">
               <span class="fw-semibold">{{ task.title }}</span>
+              {% if task.first_action %}
+              <div class="mt-1">
+                <small class="text-muted fst-italic"><i class="bi bi-arrow-right-short"></i> {{ task.first_action }}</small>
+              </div>
+              {% endif %}
               <div class="mt-1">
                 <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
+                {% if task.estimated_minutes %}
+                  <span class="badge bg-light text-dark border ms-1"><i class="bi bi-clock"></i>
+                    {% if task.estimated_minutes >= 60 %}{{ task.estimated_minutes // 60 }}h{% if task.estimated_minutes % 60 %} {{ task.estimated_minutes % 60 }}m{% endif %}{% else %}{{ task.estimated_minutes }}m{% endif %}
+                  </span>
+                {% endif %}
                 {% if task.external_link %}
                   <span class="badge bg-info text-dark ms-1">Tracked externally</span>
                 {% endif %}
@@ -155,6 +274,10 @@
               <a href="{{ url_for('focus.view', task_id=task.id) }}"
                  class="btn btn-sm btn-outline-primary" title="Focus mode">
                 <i class="bi bi-fullscreen"></i>
+              </a>
+              <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+                 class="btn btn-sm btn-outline-secondary" title="Edit">
+                <i class="bi bi-pencil"></i>
               </a>
               {% if not task.is_pinned %}
               <form method="POST" action="{{ url_for('tasks.pin', task_id=task.id) }}" class="d-inline">
@@ -176,37 +299,49 @@
 
   {# This week #}
   <div class="col-md-6">
-    <h2 class="h6 text-muted fw-semibold text-uppercase mb-2">
-      <i class="bi bi-calendar-range"></i> Coming up this week
-    </h2>
-    {% if tasks_week %}
-      <div class="list-group shadow-sm">
-        {% for task in tasks_week %}
-        <div class="list-group-item list-group-item-action">
-          <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1 me-2">
-              <span class="fw-semibold">{{ task.title }}</span>
-              <div class="mt-1">
-                <small class="text-muted me-2">
-                  {{ task.due_date.strftime('%a, %d %b') }}
-                </small>
-                <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
-                {% if task.external_link %}
-                  <span class="badge bg-info text-dark ms-1">Tracked externally</span>
-                {% endif %}
+    <button class="btn btn-link btn-sm p-0 h6 text-muted fw-semibold text-uppercase mb-2 text-decoration-none collapsed"
+            data-bs-toggle="collapse"
+            data-bs-target="#week-tasks-collapse"
+            aria-expanded="false">
+      <i class="bi bi-calendar-range me-1"></i> Coming up this week
+      <i class="bi bi-chevron-down ms-1 small"></i>
+    </button>
+    <div class="collapse" id="week-tasks-collapse">
+      {% if tasks_week %}
+        <div class="list-group shadow-sm">
+          {% for task in tasks_week %}
+          <div class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1 me-2">
+                <span class="fw-semibold">{{ task.title }}</span>
+                <div class="mt-1">
+                  <small class="text-muted me-2">
+                    {{ task.due_date.strftime('%a, %d %b') }}
+                  </small>
+                  <span class="badge {{ task.status_badge_class }}">{{ task.status }}</span>
+                  {% if task.external_link %}
+                    <span class="badge bg-info text-dark ms-1">Tracked externally</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="d-flex gap-1 flex-shrink-0">
+                <a href="{{ url_for('focus.view', task_id=task.id) }}"
+                   class="btn btn-sm btn-outline-primary" title="Focus mode">
+                  <i class="bi bi-fullscreen"></i>
+                </a>
+                <a href="{{ url_for('tasks.edit', task_id=task.id) }}"
+                   class="btn btn-sm btn-outline-secondary" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
               </div>
             </div>
-            <a href="{{ url_for('focus.view', task_id=task.id) }}"
-               class="btn btn-sm btn-outline-primary flex-shrink-0" title="Focus mode">
-              <i class="bi bi-fullscreen"></i>
-            </a>
           </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="text-muted small fst-italic">Nothing else due this week.</p>
-    {% endif %}
+      {% else %}
+        <p class="text-muted small fst-italic">Nothing else due this week.</p>
+      {% endif %}
+    </div>
   </div>
 
 </div>

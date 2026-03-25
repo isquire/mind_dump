@@ -15,12 +15,12 @@
 
     {# Completion overlay #}
     {% if just_completed %}
-    <div id="completion-overlay" class="completion-overlay text-center mb-4">
+    <div id="completion-overlay" class="completion-overlay text-center mb-4 position-relative overflow-hidden">
       <div class="completion-checkmark">
         <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
       </div>
       <h2 class="mt-3 fw-bold text-success">Done!</h2>
-      <p class="text-muted">Great work completing this task.</p>
+      <p id="completion-message" class="text-muted fs-5"></p>
       <a href="{{ url_for('dashboard.index') }}" class="btn btn-success mt-2">
         <i class="bi bi-house-fill"></i> Back to Dashboard
       </a>
@@ -53,6 +53,12 @@
             {{ task.due_date.strftime('%A, %d %b %Y') }}
           </span>
         {% endif %}
+        {% if task.estimated_minutes %}
+          <span class="badge bg-light text-dark border fs-6">
+            <i class="bi bi-clock"></i>
+            {% if task.estimated_minutes >= 60 %}{{ task.estimated_minutes // 60 }}h{% if task.estimated_minutes % 60 %} {{ task.estimated_minutes % 60 }}m{% endif %}{% else %}{{ task.estimated_minutes }}m{% endif %}
+          </span>
+        {% endif %}
         {% if task.external_link %}
           <span class="badge bg-info text-dark fs-6">
             <i class="bi bi-box-arrow-up-right"></i> Tracked externally
@@ -67,6 +73,58 @@
         </a>
       {% endif %}
     </div>
+
+    {# First Physical Action — task initiation prompt #}
+    {% if task.first_action and not just_completed %}
+    <div class="alert alert-primary border-0 mb-4 py-3" role="alert">
+      <div class="d-flex align-items-start gap-2">
+        <i class="bi bi-arrow-right-circle-fill fs-5 flex-shrink-0 mt-1"></i>
+        <div>
+          <div class="fw-semibold small text-uppercase mb-1" style="letter-spacing:.05em;">Start by</div>
+          <div class="fs-5">{{ task.first_action }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Pomodoro Timer #}
+    {% if not just_completed %}
+    <div id="pomodoro-timer" class="pomodoro-card mb-4">
+      <div class="d-flex align-items-center gap-4 flex-wrap justify-content-center">
+        {# SVG ring #}
+        <div class="pomodoro-ring-wrap position-relative">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="54" fill="none" stroke="#e9ecef" stroke-width="8"/>
+            <circle id="pomodoro-ring" cx="60" cy="60" r="54" fill="none"
+                    stroke="#3b82f6" stroke-width="8"
+                    stroke-linecap="round"
+                    stroke-dasharray="339.29"
+                    stroke-dashoffset="0"
+                    transform="rotate(-90 60 60)"
+                    style="transition: stroke-dashoffset 1s linear, stroke 0.3s ease;"/>
+          </svg>
+          <div class="position-absolute top-50 start-50 translate-middle text-center">
+            <div id="pomodoro-time" class="fw-bold" style="font-size:1.4rem;line-height:1.1;">25:00</div>
+            <div id="pomodoro-phase" class="text-muted" style="font-size:0.65rem;">25 min Focus</div>
+          </div>
+        </div>
+        {# Controls #}
+        <div>
+          <div class="d-flex gap-2 mb-2">
+            <button id="pomodoro-start" type="button" class="btn btn-primary btn-sm">
+              <i class="bi bi-play-fill"></i> Start
+            </button>
+            <button id="pomodoro-reset" type="button" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-counterclockwise"></i> Reset
+            </button>
+          </div>
+          <button id="pomodoro-micro" type="button" class="btn btn-outline-primary btn-sm w-100">
+            <i class="bi bi-lightning-charge-fill"></i> Just 2 Minutes
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     {# Notes (Quill HTML output) #}
     {% if task.notes %}
@@ -107,15 +165,191 @@
 {% endblock %}
 
 {% block scripts %}
-{% if just_completed %}
 <script>
-  // Trigger completion animation on page load
-  document.addEventListener('DOMContentLoaded', function () {
-    const overlay = document.getElementById('completion-overlay');
-    if (overlay) {
-      overlay.classList.add('animate-complete');
+document.addEventListener('DOMContentLoaded', function () {
+
+  {% if just_completed %}
+  // ── Enhanced completion animation ───────────────────────────────────────
+  var messages = [
+    "Crushed it!",
+    "ADHD wins again!",
+    "That's what I'm talking about!",
+    "Momentum! Keep it rolling!",
+    "One task at a time — and you did it!",
+    "Brain 1, Task 0!",
+    "Look at you go!",
+    "Dopamine unlocked!",
+    "You absolute legend!",
+    "That felt good, right?",
+  ];
+  document.getElementById('completion-message').textContent =
+    messages[Math.floor(Math.random() * messages.length)];
+
+  var overlay = document.getElementById('completion-overlay');
+  if (overlay) {
+    overlay.classList.add('animate-complete');
+    // Spawn confetti after a short delay
+    setTimeout(spawnConfetti, 200);
+  }
+
+  function spawnConfetti() {
+    var colors = ['#f59e0b','#3b82f6','#22c55e','#a855f7','#ef4444','#ec4899','#06b6d4'];
+    for (var i = 0; i < 24; i++) {
+      (function (idx) {
+        setTimeout(function () {
+          var el = document.createElement('div');
+          el.className = 'confetti-piece';
+          el.style.backgroundColor = colors[idx % colors.length];
+          el.style.left = (20 + Math.random() * 60) + '%';
+          el.style.top = '30%';
+          el.style.setProperty('--tx', (Math.random() * 160 - 80) + 'px');
+          el.style.setProperty('--ty', (Math.random() * 80 + 40) + 'px');
+          el.style.animationDuration = (0.6 + Math.random() * 0.6) + 's';
+          overlay.appendChild(el);
+          el.addEventListener('animationend', function () { el.remove(); });
+        }, idx * 25);
+      })(i);
     }
+  }
+  {% endif %}
+
+  // ── Pomodoro Timer ───────────────────────────────────────────────────────
+  var WORK_SECS  = 25 * 60;
+  var BREAK_SECS = 5 * 60;
+  var MICRO_SECS = 2 * 60;
+  var CIRCUMFERENCE = 2 * Math.PI * 54; // matches r=54 in SVG
+
+  var timer = {
+    phase: 'work',
+    secondsLeft: WORK_SECS,
+    running: false,
+    micro: false,
+    interval: null
+  };
+  var statusUpdated = false;
+
+  var ring       = document.getElementById('pomodoro-ring');
+  var timeEl     = document.getElementById('pomodoro-time');
+  var phaseEl    = document.getElementById('pomodoro-phase');
+  var startBtn   = document.getElementById('pomodoro-start');
+  var resetBtn   = document.getElementById('pomodoro-reset');
+  var microBtn   = document.getElementById('pomodoro-micro');
+
+  if (!ring) return; // not on focus page
+
+  ring.style.strokeDasharray = CIRCUMFERENCE;
+  updateDisplay();
+
+  startBtn.addEventListener('click', function () {
+    timer.running ? pauseTimer() : startTimer();
   });
+  resetBtn.addEventListener('click', resetTimer);
+  microBtn.addEventListener('click', function () {
+    clearInterval(timer.interval);
+    timer.running = false;
+    timer.micro = true;
+    timer.phase = 'micro';
+    timer.secondsLeft = MICRO_SECS;
+    setStartBtn('start');
+    updateDisplay();
+    startTimer();
+  });
+
+  function startTimer() {
+    if (timer.secondsLeft <= 0) return;
+    if (!statusUpdated && {{ (task.status == 'Not Started') | tojson }}) {
+      statusUpdated = true;
+      fetch('{{ url_for("focus.start", task_id=task.id) }}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+      });
+    }
+    timer.running = true;
+    setStartBtn('pause');
+    timer.interval = setInterval(function () {
+      timer.secondsLeft--;
+      if (timer.secondsLeft <= 0) {
+        clearInterval(timer.interval);
+        timer.running = false;
+        onSessionEnd();
+        return;
+      }
+      updateDisplay();
+    }, 1000);
+  }
+
+  function pauseTimer() {
+    timer.running = false;
+    clearInterval(timer.interval);
+    setStartBtn('resume');
+  }
+
+  function resetTimer() {
+    clearInterval(timer.interval);
+    timer.running = false;
+    timer.micro = false;
+    timer.phase = 'work';
+    timer.secondsLeft = WORK_SECS;
+    setStartBtn('start');
+    updateDisplay();
+  }
+
+  function onSessionEnd() {
+    // Flash the ring to signal session end
+    ring.classList.add('pomodoro-flash');
+    setTimeout(function () { ring.classList.remove('pomodoro-flash'); }, 1200);
+
+    if (timer.micro) {
+      timer.micro = false;
+      timer.phase = 'work';
+      timer.secondsLeft = WORK_SECS;
+    } else if (timer.phase === 'work') {
+      timer.phase = 'break';
+      timer.secondsLeft = BREAK_SECS;
+    } else {
+      timer.phase = 'work';
+      timer.secondsLeft = WORK_SECS;
+    }
+    setStartBtn('start');
+    updateDisplay();
+  }
+
+  function updateDisplay() {
+    var total = timer.micro ? MICRO_SECS : (timer.phase === 'work' ? WORK_SECS : BREAK_SECS);
+    var progress = total > 0 ? timer.secondsLeft / total : 0;
+    ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+
+    var m = Math.floor(timer.secondsLeft / 60);
+    var s = timer.secondsLeft % 60;
+    timeEl.textContent = pad(m) + ':' + pad(s);
+
+    if (timer.micro) {
+      phaseEl.textContent = 'Just 2 Minutes';
+      ring.style.stroke = '#6366f1';
+    } else if (timer.phase === 'work') {
+      phaseEl.textContent = '25 min Focus';
+      ring.style.stroke = '#3b82f6';
+    } else {
+      phaseEl.textContent = '5 min Break';
+      ring.style.stroke = '#22c55e';
+    }
+  }
+
+  function setStartBtn(state) {
+    if (state === 'pause') {
+      startBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
+      startBtn.className = 'btn btn-secondary btn-sm';
+    } else if (state === 'resume') {
+      startBtn.innerHTML = '<i class="bi bi-play-fill"></i> Resume';
+      startBtn.className = 'btn btn-primary btn-sm';
+    } else {
+      startBtn.innerHTML = '<i class="bi bi-play-fill"></i> Start';
+      startBtn.className = 'btn btn-primary btn-sm';
+    }
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+});
 </script>
-{% endif %}
 {% endblock %}
