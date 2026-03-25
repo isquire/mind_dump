@@ -34,6 +34,28 @@ document.addEventListener('DOMContentLoaded', function () {
     new bootstrap.Tooltip(el);
   });
 
+  // ── Night mode toggle ───────────────────────────────────
+  var themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    function updateThemeIcon() {
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      themeToggle.querySelector('i').className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    }
+    updateThemeIcon();
+
+    themeToggle.addEventListener('click', function () {
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+      updateThemeIcon();
+    });
+  }
+
   // ── Auto-dismiss flash alerts after 4 seconds ──────────
   document.querySelectorAll('.alert.alert-success, .alert.alert-info').forEach(function (alert) {
     setTimeout(function () {

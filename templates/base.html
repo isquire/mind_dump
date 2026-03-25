@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script>if(localStorage.getItem('theme')==='dark')document.documentElement.setAttribute('data-theme','dark');</script>
 </head>
 <body>
 
@@ -92,6 +93,13 @@
         </form>
         {% endfor %}
       </div>
+
+      {# Night mode toggle #}
+      <button id="theme-toggle" type="button"
+              class="btn btn-outline-light btn-sm me-2"
+              title="Toggle night mode" aria-label="Toggle night mode">
+        <i class="bi bi-moon-fill"></i>
+      </button>
 
       {# Logout — always visible #}
       <form method="POST" action="{{ url_for('auth.logout') }}" class="d-flex">
